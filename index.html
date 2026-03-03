@@ -66,20 +66,17 @@
                 </div>
 
                 <div v-for="item in sortedItinerary" :key="item.id" class="mb-4">
-                    <div v-if="item.type === '航班'" class="bg-gradient-to-br from-stone-800 to-stone-900 text-white rounded-2xl p-5 shadow-lg" @click="editItem(item)">
+                    <div v-if="item.type === '航班'" class="bg-gradient-to-br from-stone-800 to-stone-900 text-white rounded-2xl p-5 shadow-lg">
                         <div class="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="plane" class="w-4 h-4 text-amber-400"></i>
                                 <span class="text-sm font-bold">{{ item.name }}</span>
                             </div>
-                            <div class="flex gap-2">
-                                <button @click.stop="openGoogleMaps(item.name)" class="p-1"><i data-lucide="navigation" class="w-4 h-4"></i></button>
-                                <button @click.stop="deleteItineraryItem(item.id)" class="p-1 text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                            </div>
+                            <button @click.stop="removeItem('itinerary', item.id)" class="text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                         <div class="flex justify-between items-center text-center">
                             <div class="flex-1 text-left">
-                                <p class="text-2xl font-bold font-serif">{{ item.dep || '---' }}</p>
+                                <p class="text-2xl font-bold font-serif">{{ item.dep }}</p>
                                 <p class="text-[10px] opacity-50 uppercase">DEP</p>
                             </div>
                             <div class="flex-1 border-t border-dashed border-white/30 relative mx-2">
@@ -87,22 +84,18 @@
                                 <p class="text-[10px] mt-2 opacity-50">{{ item.time }}</p>
                             </div>
                             <div class="flex-1 text-right">
-                                <p class="text-2xl font-bold font-serif">{{ item.arr || '---' }}</p>
+                                <p class="text-2xl font-bold font-serif">{{ item.arr }}</p>
                                 <p class="text-[10px] opacity-50 uppercase">ARR</p>
                             </div>
                         </div>
                     </div>
-                    
-                    <div v-else class="rounded-2xl p-4 border transition-all shadow-sm flex items-start gap-3" 
-                         :style="{ backgroundColor: item.color + '15', borderColor: item.color + '40' }"
-                         @click="editItem(item)">
+                    <div v-else class="rounded-2xl p-4 border flex items-start gap-3 bg-white shadow-sm" :style="{ borderColor: item.color + '40' }">
                         <i :data-lucide="getIcon(item.type)" class="w-5 h-5 mt-1" :style="{ color: item.color }"></i>
                         <div class="flex-1">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-bold text-stone-800">{{ item.name }}</h3>
-                                <div class="flex items-center gap-2">
-                                    <button @click.stop="openGoogleMaps(item.name)" class="text-stone-400"><i data-lucide="navigation" class="w-4 h-4"></i></button>
-                                    <button @click.stop="deleteItineraryItem(item.id)" class="text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                <div class="flex gap-2">
+                                    <button @click.stop="removeItem('itinerary', item.id)" class="text-stone-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                     <span class="text-sm font-bold text-stone-500">{{ item.time }}</span>
                                 </div>
                             </div>
@@ -111,12 +104,60 @@
                     </div>
                 </div>
             </div>
-            <div class="fab" @click="openAddModal"><i data-lucide="plus" class="w-8 h-8"></i></div>
+            <div class="fab" @click="activeModal = 'itinerary'"><i data-lucide="plus" class="w-8 h-8"></i></div>
         </section>
 
-        <section v-if="currentTab === 'shopping'" class="p-5 pt-8">...</section>
-        <section v-if="currentTab === 'expense'" class="p-5 pt-8">...</section>
-        <section v-if="currentTab === 'info'" class="p-6 pt-8">...</section>
+        <section v-else-if="currentTab === 'shopping'" class="p-5 pt-8">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-stone-800">
+                <i data-lucide="shopping-basket"></i> 購物清單
+            </h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div v-for="(item, idx) in shoppingList" :key="idx" class="shop-card shadow-sm border border-stone-100">
+                    <img v-if="item.image" :src="item.image" class="shop-img">
+                    <div v-else class="shop-img flex items-center justify-center text-stone-200 bg-stone-50">
+                        <i data-lucide="image" class="w-10 h-10"></i>
+                    </div>
+                    <div class="p-3">
+                        <p class="font-bold text-sm text-stone-800 truncate">{{ item.name }}</p>
+                        <button @click="removeItem('shopping', idx)" class="text-red-300 text-[10px] mt-2">刪除</button>
+                    </div>
+                </div>
+            </div>
+            <div class="fab" @click="activeModal = 'shopping'"><i data-lucide="plus" class="w-8 h-8"></i></div>
+        </section>
+
+        <section v-else-if="currentTab === 'expense'" class="p-5 pt-8">
+            <div class="bg-stone-800 text-white rounded-3xl p-6 mb-6 shadow-lg">
+                <p class="text-stone-400 text-xs mb-1 uppercase tracking-widest font-bold">Total Expenses</p>
+                <h2 class="text-3xl font-bold font-serif">¥ {{ totalExpense.toLocaleString() }}</h2>
+            </div>
+            <div class="space-y-3">
+                <div v-for="(exp, idx) in expenseList" :key="idx" class="bg-white p-4 rounded-2xl border border-stone-100 flex justify-between items-center shadow-sm">
+                    <div class="flex gap-3 items-center">
+                        <div class="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-500">
+                            <i :data-lucide="getExpIcon(exp.category)" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-stone-800">{{ exp.name }}</p>
+                            <p class="text-[10px] text-stone-400 uppercase">{{ exp.category }} | {{ exp.date }} | {{ exp.method }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-stone-800">¥{{ exp.amount }}</p>
+                        <button @click="removeItem('expense', idx)" class="text-red-300 text-[10px]">刪除</button>
+                    </div>
+                </div>
+            </div>
+            <div class="fab" @click="openExpenseModal"><i data-lucide="plus" class="w-8 h-8"></i></div>
+        </section>
+
+        <section v-else-if="currentTab === 'info'" class="p-6 pt-8">
+            <h2 class="text-2xl font-bold mb-6">旅遊工具</h2>
+            <div class="bg-stone-100 p-4 rounded-2xl">
+                <p class="text-sm text-stone-500">匯率參考</p>
+                <p class="font-bold text-stone-800">1 JPY ≈ 0.052 HKD</p>
+            </div>
+        </section>
     </main>
 
     <nav class="tab-bar">
@@ -125,7 +166,33 @@
         </button>
     </nav>
 
+    <div v-if="activeModal" class="modal-overlay" @click.self="activeModal = null">
+        <div class="modal-content">
+            <div v-if="activeModal === 'shopping'" class="space-y-4">
+                <h3 class="text-xl font-bold text-stone-800 mb-4">新增購物項目</h3>
+                <input v-model="shopForm.name" placeholder="商品名稱">
+                <input type="file" @change="handleFileUpload" accept="image/*">
+                <button @click="addShopping" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">加入清單</button>
+            </div>
+
+            <div v-if="activeModal === 'expense'" class="space-y-4">
+                <h3 class="text-xl font-bold text-stone-800 mb-2">新增花費記錄</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <select v-model="expForm.category">
+                        <option>交通</option><option>飲食</option><option>住宿</option><option>門票</option><option>購物</option><option>其他</option>
+                    </select>
+                    <input type="date" v-model="expForm.date">
+                </div>
+                <input v-model="expForm.name" placeholder="花費名稱">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" v-model.number="expForm.amount" placeholder="金額 (日幣)">
+                    <select v-model="expForm.method"><option>現金</option><option>信用卡</option></select>
+                </div>
+                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">確認紀錄</button>
+            </div>
+        </div>
     </div>
+</div>
 
 <script>
 const firebaseConfig = {
@@ -149,46 +216,83 @@ createApp({
         const currentTab = ref('itinerary');
         const selectedDayIndex = ref(0);
         const activeModal = ref(null);
-        const gbpVal = ref(1);
-        const eurVal = ref(1);
-
         const daysData = ref([]);
         const shoppingList = ref([]);
         const expenseList = ref([]);
 
-        // 預設 3/10 - 3/20 行程資料
+        const shopForm = ref({ name: '', image: null });
+        const expForm = ref({ category: '飲食', name: '', date: '', amount: null, method: '現金', note: '' });
+
+        // 已加入 3/10 - 3/20 行程內容
         const defaultDays = [
-            { weekday: 'Tue', dateNum: '10 Mar', location: '香港 > 倫敦', desc: '出發蜜月之旅', weather: '多雲', temp: '12', itinerary: [
-                { id: 1, type: '航班', name: '國泰航空 CX251', time: '23:55', dep: 'HKG', arr: 'LHR', color: '#1f2937' }
+            { weekday: 'Tue', dateNum: '10 Mar', location: '抵達倫敦', desc: 'Merit Kensington Hotel', weather: '多雲', temp: '11', itinerary: [
+                { id: Date.now()+1, type: '航班', name: '國泰航空 CX239', time: '10:40-17:20', dep: 'HKG', arr: 'LHR', color: '#1f2937' },
+                { id: Date.now()+2, type: '交通', name: '地鐵 Piccadilly Line', time: '18:30', note: 'Heathrow T3 -> Earl\'s Court', color: '#1d4ed8' },
+                { id: Date.now()+3, type: '住宿', name: 'Merit Kensington Hotel', time: '19:30', note: 'Check-in 入住', color: '#8B5CF6' },
+                { id: Date.now()+4, type: '美食', name: 'The Troubadour', time: '20:30', note: '晚餐：歷史氣息餐廳', color: '#f59e0b' }
             ]},
-            { weekday: 'Wed', dateNum: '11 Mar', location: '倫敦', desc: '抵達英國', weather: '陣雨', temp: '10', itinerary: [
-                { id: 2, type: '住宿', name: '倫敦飯店 Check-in', time: '14:00', note: '放置行李', color: '#8B5CF6' }
+            { weekday: 'Wed', dateNum: '11 Mar', location: '倫敦/牛津', desc: '購物與文化', weather: '晴朗', temp: '13', itinerary: [
+                { id: Date.now()+5, type: '交通', name: '火車前往 Bicester Village', time: '09:00', note: 'Marylebone 車站出發', color: '#1d4ed8' },
+                { id: Date.now()+6, type: '景點', name: 'Bicester Village Outlet', time: '10:30', note: '購物時光', color: '#3B82F6' },
+                { id: Date.now()+7, type: '美食', name: 'Ottolenghi / Cecconi\'s', time: '13:00', note: '午餐', color: '#f59e0b' },
+                { id: Date.now()+8, type: '景點', name: '牛津大學城 Oxford', time: '15:30', note: '市區觀光', color: '#3B82F6' }
             ]},
-            { weekday: 'Thu', dateNum: '12 Mar', location: '倫敦', desc: '市區巡禮', weather: '多雲', temp: '11', itinerary: [
-                { id: 3, type: '景點', name: '大笨鐘 & 倫敦眼', time: '10:00', note: '必拍地標', color: '#3B82F6' }
+            { weekday: 'Thu', dateNum: '12 Mar', location: '倫敦', desc: '藝術與地標', weather: '多雲', temp: '12', itinerary: [
+                { id: Date.now()+9, type: '景點', name: '科芬園 Covent Garden', time: '10:00', note: '看街頭藝人', color: '#3B82F6' },
+                { id: Date.now()+10, type: '景點', name: '自然史博物館', time: '13:30', note: '歷史建築', color: '#3B82F6' },
+                { id: Date.now()+11, type: '景點', name: '大笨鐘 & 國會大廈', time: '16:30', note: '必拍地標', color: '#3B82F6' },
+                { id: Date.now()+12, type: '美食', name: 'Flat Iron', time: '19:00', note: '平價牛排晚餐', color: '#f59e0b' }
             ]},
-            { weekday: 'Fri', dateNum: '13 Mar', location: '倫敦', desc: '文化之旅', weather: '晴朗', temp: '13', itinerary: [] },
-            { weekday: 'Sat', dateNum: '14 Mar', location: '倫敦 > 巴黎', desc: '跨國火車', weather: '多雲', temp: '12', itinerary: [
-                { id: 4, type: '交通', name: '歐洲之星 Eurostar', time: '10:30', note: '聖潘克拉斯車站', color: '#4A4238' }
+            { weekday: 'Fri', dateNum: '13 Mar', location: '倫敦', desc: '美食與散步', weather: '陣雨', temp: '10', itinerary: [
+                { id: Date.now()+13, type: '美食', name: 'Fatto (King\'s Cross)', time: '12:30', note: '午餐', color: '#f59e0b' },
+                { id: Date.now()+14, type: '景點', name: '倫敦眼區散步', time: '15:00', note: '再次漫步泰晤士河', color: '#3B82F6' },
+                { id: Date.now()+15, type: '美食', name: 'Borough Market', time: '18:30', note: '晚餐：異國美食市場', color: '#f59e0b' }
             ]},
-            { weekday: 'Sun', dateNum: '15 Mar', location: '巴黎', desc: '浪漫之都', weather: '多雲', temp: '14', itinerary: [] },
-            { weekday: 'Mon', dateNum: '16 Mar', location: '巴黎', desc: '時尚與藝術', weather: '晴朗', temp: '15', itinerary: [] },
-            { weekday: 'Tue', dateNum: '17 Mar', location: '巴黎', desc: '深度探索', weather: '多雲', temp: '14', itinerary: [] },
-            { weekday: 'Wed', dateNum: '18 Mar', location: '巴黎', desc: '最後採購', weather: '陣雨', temp: '13', itinerary: [] },
-            { weekday: 'Thu', dateNum: '19 Mar', location: '巴黎 > 香港', desc: '準備歸國', weather: '多雲', temp: '14', itinerary: [
-                { id: 5, type: '航班', name: '國泰航空 CX260', time: '13:00', dep: 'CDG', arr: 'HKG', color: '#1f2937' }
+            { weekday: 'Sat', dateNum: '14 Mar', location: '倫敦', desc: '車路士球賽日', weather: '晴朗', temp: '14', itinerary: [
+                { id: Date.now()+16, type: '景點', name: 'Stamford Bridge 球場', time: '12:00', note: '參觀博物館', color: '#3B82F6' },
+                { id: Date.now()+17, type: '景點', name: '英超賽事：車路士 vs 紐卡素', time: '17:30', note: '熱血觀賽', color: '#1d4ed8' },
+                { id: Date.now()+18, type: '美食', name: 'Butcher\'s Hook', time: '20:00', note: '晚餐：球會發源地', color: '#f59e0b' }
             ]},
-            { weekday: 'Fri', dateNum: '20 Mar', location: '香港', desc: '抵達家園', weather: '晴朗', temp: '22', itinerary: [] }
+            { weekday: 'Sun', dateNum: '15 Mar', location: '倫敦 > 阿姆斯特丹', desc: '前往荷蘭', weather: '多雲', temp: '12', itinerary: [
+                { id: Date.now()+19, type: '景點', name: 'Holland Park', time: '10:00', note: '肯辛頓區早午餐', color: '#3B82F6' },
+                { id: Date.now()+20, type: '航班', name: '英國航空 BA440', time: '14:10-16:35', dep: 'LHR', arr: 'AMS', color: '#1f2937' },
+                { id: Date.now()+21, type: '交通', name: 'NS Train', time: '17:30', note: '機場 -> 阿姆斯特丹中央車站', color: '#1d4ed8' },
+                { id: Date.now()+22, type: '住宿', name: 'Inntel Hotel Amsterdam', time: '18:00', note: 'Check-in 入住', color: '#8B5CF6' },
+                { id: Date.now()+23, type: '美食', name: 'Loetje Centraal', time: '19:30', note: '知名牛排晚餐', color: '#f59e0b' }
+            ]},
+            { weekday: 'Mon', dateNum: '16 Mar', location: '阿姆斯特丹', desc: '藝術巡禮', weather: '晴朗', temp: '11', itinerary: [
+                { id: Date.now()+24, type: '景點', name: '梵谷博物館', time: '10:00', note: 'Van Gogh Museum', color: '#3B82F6' },
+                { id: Date.now()+25, type: '景點', name: '荷蘭國家博物館', time: '13:00', note: 'Rijksmuseum', color: '#3B82F6' },
+                { id: Date.now()+26, type: '景點', name: '運河遊船', time: '16:00', note: '觀賞城市風光', color: '#3B82F6' },
+                { id: Date.now()+27, type: '美食', name: 'The Pancake Bakery', time: '18:30', note: '晚餐：荷蘭煎餅', color: '#f59e0b' }
+            ]},
+            { weekday: 'Tue', dateNum: '17 Mar', location: '布魯塞爾', desc: '比利時一日遊', weather: '多雲', temp: '10', itinerary: [
+                { id: Date.now()+28, type: '景點', name: '布魯塞爾大廣場', time: '11:00', note: 'Grand Place', color: '#3B82F6' },
+                { id: Date.now()+29, type: '景點', name: '尿尿小童', time: '14:00', note: '買巧克力與鬆餅', color: '#3B82F6' },
+                { id: Date.now()+30, type: '美食', name: 'Chez Léon', time: '17:30', note: '晚餐：淡菜薯條', color: '#f59e0b' }
+            ]},
+            { weekday: 'Wed', dateNum: '18 Mar', location: '鹿特丹', desc: '現代建築一日遊', weather: '晴朗', temp: '12', itinerary: [
+                { id: Date.now()+31, type: '景點', name: '鹿特丹方塊屋', time: '10:30', note: 'Cubic Houses', color: '#3B82F6' },
+                { id: Date.now()+32, type: '景點', name: 'Markthal 拱形大市場', time: '12:30', note: '建築與美食', color: '#3B82F6' },
+                { id: Date.now()+33, type: '景點', name: '伊拉斯謨橋', time: '15:30', note: '城市地標', color: '#3B82F6' }
+            ]},
+            { weekday: 'Thu', dateNum: '19 Mar', location: '阿姆斯特丹 > 香港', desc: '歸途', weather: '多雲', temp: '11', itinerary: [
+                { id: Date.now()+34, type: '交通', name: '前往史基浦機場', time: '10:30', note: '火車前往機場', color: '#1d4ed8' },
+                { id: Date.now()+35, type: '航班', name: '國泰航空 CX270', time: '12:30', dep: 'AMS', arr: 'HKG', color: '#1f2937' }
+            ]},
+            { weekday: 'Fri', dateNum: '20 Mar', location: '香港', desc: '抵達家園', weather: '晴朗', temp: '20', itinerary: [
+                { id: Date.now()+36, type: '航班', name: '抵達香港', time: '07:30', note: '結束行程', color: '#1f2937' }
+            ]}
         ];
 
         onMounted(() => {
             docRef.onSnapshot((doc) => {
                 if (doc && doc.exists) {
                     const data = doc.data();
-                    // 如果雲端日期不對或沒行程，則使用預設值
-                    if (!data.daysData || data.daysData[0].dateNum !== '10 Mar') {
+                    // 強制檢查日期，確保新行程植入
+                    if (!data.daysData || data.daysData[0].dateNum !== '10 Mar' || data.daysData.length < 11) {
                         daysData.value = defaultDays;
-                        saveToCloud(); // 自動修正雲端
+                        saveToCloud();
                     } else {
                         daysData.value = data.daysData;
                     }
@@ -217,8 +321,51 @@ createApp({
             return [...day.itinerary].sort((a, b) => (a.time || "").localeCompare(b.time || ""));
         });
 
-        const openGoogleMaps = (name) => {
-            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank');
+        const totalExpense = computed(() => {
+            return expenseList.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        });
+
+        const handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (f) => { shopForm.value.image = f.target.result; };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        const addShopping = () => {
+            if (!shopForm.value.name) return;
+            shoppingList.value.push({ ...shopForm.value });
+            saveToCloud();
+            shopForm.value = { name: '', image: null };
+            activeModal.value = null;
+        };
+
+        const openExpenseModal = () => {
+            expForm.value.date = new Date().toISOString().substr(0, 10);
+            activeModal.value = 'expense';
+        };
+
+        const addExpense = () => {
+            if (!expForm.value.name || !expForm.value.amount) return;
+            expenseList.value.unshift({ ...expForm.value });
+            saveToCloud();
+            expForm.value = { category: '飲食', name: '', date: '', amount: null, method: '現金', note: '' };
+            activeModal.value = null;
+        };
+
+        const removeItem = (type, idOrIdx) => {
+            if (!confirm('確定要刪除嗎？')) return;
+            if (type === 'itinerary') {
+                const day = daysData.value[selectedDayIndex.value];
+                day.itinerary = day.itinerary.filter(item => item.id !== idOrIdx);
+            } else if (type === 'shopping') {
+                shoppingList.value.splice(idOrIdx, 1);
+            } else if (type === 'expense') {
+                expenseList.value.splice(idOrIdx, 1);
+            }
+            saveToCloud();
         };
 
         watch([currentTab, activeModal, selectedDayIndex, loading], () => {
@@ -227,11 +374,17 @@ createApp({
 
         return { 
             loading, currentTab, daysData, selectedDayIndex, sortedItinerary, 
-            tabs: [{ id: 'itinerary', name: '行程', icon: 'map-pin' }, { id: 'shopping', name: '購物', icon: 'shopping-basket' }, { id: 'expense', name: '花費', icon: 'banknote' }, { id: 'info', name: '工具', icon: 'info' }],
+            shoppingList, expenseList, shopForm, expForm, activeModal, totalExpense,
+            tabs: [
+                { id: 'itinerary', name: '行程', icon: 'map-pin' }, 
+                { id: 'shopping', name: '購物', icon: 'shopping-basket' }, 
+                { id: 'expense', name: '花費', icon: 'banknote' }, 
+                { id: 'info', name: '工具', icon: 'info' }
+            ],
             getIcon: (t) => ({'景點':'camera','美食':'utensils','交通':'bus','住宿':'bed','航班':'plane'}[t] || 'map-pin'),
             getWeatherIcon: (w) => ({'晴朗':'sun','多雲':'cloud','陰天':'cloudy','陣雨':'cloud-rain'}[w] || 'cloud'),
-            openGoogleMaps, saveToCloud
-            // ... 其餘函數與之前相同
+            getExpIcon: (c) => ({'交通':'car','飲食':'utensils','住宿':'home','門票':'ticket','購物':'shopping-bag','其他':'more-horizontal'}[c] || 'dollar-sign'),
+            addShopping, handleFileUpload, openExpenseModal, addExpense, removeItem
         };
     }
 }).mount('#app');
