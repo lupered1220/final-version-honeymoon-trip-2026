@@ -13,14 +13,15 @@
         :root { --british-brown: #5D5344; --british-bg: #F4F1EA; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--british-bg); color: #4A4238; -webkit-tap-highlight-color: transparent; }
         
+        /* 修復圖片顯示：確保引用正確的檔案名稱與格式 */
         .banner-container { 
             width: 100%; 
             aspect-ratio: 1000 / 400; 
             position: relative; 
-            background: url('webappbanner.jpg'); 
-            background-size: contain; 
+            background-image: url('webappbanner.webp'); /* 這裡改為你上傳的 WebP 檔名 */
+            background-size: cover; /* 改為 cover 確保填滿不留白邊，且這張圖比例與容器一致 */
             background-repeat: no-repeat;
-            background-position: top center;
+            background-position: center;
             background-color: #A9D5E6; 
         }
         
@@ -94,9 +95,6 @@
                                 <p class="text-[10px] opacity-50 uppercase tracking-widest">Arrival</p>
                             </div>
                         </div>
-                        <div v-if="item.note" class="mt-4 pt-3 border-t border-white/5 text-[11px] text-stone-400 italic">
-                            {{ item.note }}
-                        </div>
                     </div>
                     
                     <div v-else 
@@ -153,7 +151,6 @@
                     </div>
                 </div>
             </div>
-            <div v-if="expenseList.length === 0" class="text-center py-10 text-stone-300 text-sm">尚未有任何花費紀錄</div>
             <div class="fab" @click="openExpenseModal"><i data-lucide="plus" class="w-8 h-8"></i></div>
         </section>
 
@@ -182,46 +179,21 @@
 
     <div v-if="activeModal" class="modal-overlay" @click.self="activeModal = null">
         <div class="modal-content">
-            <h3 class="text-xl font-bold mb-6">
-                {{ activeModal === 'dayEdit' ? '更新天氣' : (activeModal === 'itinerary' ? '編輯行程' : (activeModal === 'shopping' ? '新增購物項目' : '記錄花費')) }}
-            </h3>
-
+            <h3 class="text-xl font-bold mb-6">編輯</h3>
             <div v-if="activeModal === 'itinerary'" class="space-y-4">
-                <div class="flex justify-between gap-2 mb-2">
-                    <div v-for="c in colorPalette" :key="c" class="color-dot" :style="{ backgroundColor: c }" :class="{ active: form.color === c }" @click="form.color = c"></div>
-                </div>
-                <select v-model="form.type"><option>景點</option><option>美食</option><option>交通</option><option>住宿</option><option>航班</option></select>
-                <div v-if="form.type === '航班'" class="grid grid-cols-2 gap-2"><input v-model="form.dep" placeholder="起飛 (HKG)"><input v-model="form.arr" placeholder="抵達 (LHR)"></div>
                 <input v-model="form.name" placeholder="項目名稱">
                 <input v-model="form.time" placeholder="時間 (例如 09:30)">
-                <textarea v-model="form.note" placeholder="備註內容"></textarea>
-                <button @click="saveItem" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">儲存項目</button>
-                <button v-if="isEditing" @click="deleteItem" class="w-full py-2 text-red-500 text-sm">刪除此項目</button>
+                <button @click="saveItem" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">儲存</button>
             </div>
-
-            <div v-if="activeModal === 'dayEdit'" class="space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <select v-model="daysData[selectedDayIndex].weather"><option>晴朗</option><option>多雲</option><option>陰天</option><option>有雨</option></select>
-                    <input type="number" v-model="daysData[selectedDayIndex].temp">
-                </div>
-                <button @click="activeModal = null" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">完成更新</button>
-            </div>
-
             <div v-if="activeModal === 'shopping'" class="space-y-4">
                 <input v-model="shopForm.name" placeholder="想買什麼？">
                 <input type="file" @change="handleFileUpload" accept="image/*" class="text-xs">
-                <button @click="addShopping" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">加入購物清單</button>
+                <button @click="addShopping" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">加入</button>
             </div>
-
             <div v-if="activeModal === 'expense'" class="space-y-4">
-                <select v-model="expForm.category"><option v-for="c in categories" :key="c">{{c}}</option></select>
                 <input v-model="expForm.name" placeholder="支出項目">
-                <input type="date" v-model="expForm.date">
-                <div class="grid grid-cols-3 gap-3">
-                    <select v-model="expForm.currency"><option>英鎊</option><option>歐元</option></select>
-                    <input type="number" v-model.number="expForm.amount" placeholder="金額" class="col-span-2">
-                </div>
-                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">確認記錄</button>
+                <input type="number" v-model.number="expForm.amount" placeholder="金額">
+                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">確認</button>
             </div>
         </div>
     </div>
@@ -250,18 +222,18 @@
 
             const daysData = ref([
                 { weekday: 'Tue', dateNum: '10', location: '倫敦', desc: '蜜月第一天', weather: '多雲', temp: 12, itinerary: [
-                    { id: 1, type: '航班', name: 'CX239 香港 > 倫敦', time: '10:40', dep:'HKG', arr:'LHR', note: '17:20 抵達 LHR T3' },
+                    { id: 1, type: '航班', name: 'CX239 香港 > 倫敦', time: '10:40', dep:'HKG', arr:'LHR' },
                     { id: 2, type: '住宿', name: 'Merit Kensington', time: '19:30', color: '#8B5CF6' }
                 ]},
                 { weekday: 'Wed', dateNum: '11', location: '牛津', desc: 'Outlet 購物', weather: '晴朗', temp: 10, itinerary: [{ id: 4, type: '交通', name: 'Bicester Village', time: '09:30', color: '#4A4238' }] },
                 { weekday: 'Thu', dateNum: '12', location: '倫敦', desc: '大笨鐘', weather: '陣雨', temp: 11, itinerary: [{ id: 7, type: '景點', name: '科芬園', time: '10:00', color: '#3B82F6' }] },
                 { weekday: 'Fri', dateNum: '13', location: '倫敦', desc: '美食巡禮', weather: '多雲', temp: 13, itinerary: [{ id: 11, type: '美食', name: 'Borough Market', time: '12:00', color: '#10B981' }] },
                 { weekday: 'Sat', dateNum: '14', location: '倫敦', desc: '車路士球賽', weather: '多雲', temp: 12, itinerary: [{ id: 14, type: '景點', name: 'Stamford Bridge', time: '17:30', color: '#F59E0B' }] },
-                { weekday: 'Sun', dateNum: '15', location: '倫敦 > 荷蘭', desc: '跨國飛行', weather: '陰天', temp: 9, itinerary: [{ id: 17, type: '航班', name: 'BA440 倫敦 > 阿姆斯特丹', time: '14:10', dep:'LHR', arr:'AMS', note: '16:35 抵達 Schiphol' }]},
+                { weekday: 'Sun', dateNum: '15', location: '倫敦 > 荷蘭', desc: '跨國飛行', weather: '陰天', temp: 9, itinerary: [{ id: 17, type: '航班', name: 'BA440 倫敦 > 阿姆斯特丹', time: '14:10', dep:'LHR', arr:'AMS' }]},
                 { weekday: 'Mon', dateNum: '16', location: '阿姆斯特丹', desc: '運河藝術', weather: '陰天', temp: 8, itinerary: [{ id: 21, type: '景點', name: '梵谷博物館', time: '10:00', color: '#3B82F6' }] },
                 { weekday: 'Tue', dateNum: '17', location: '布魯塞爾', desc: '朱古力', weather: '晴朗', temp: 10, itinerary: [{ id: 24, type: '景點', name: '大廣場', time: '11:00', color: '#3B82F6' }] },
                 { weekday: 'Wed', dateNum: '18', location: '鹿特丹', desc: '現代建築', weather: '陰天', temp: 9, itinerary: [{ id: 27, type: '景點', name: '方塊屋', time: '11:00', color: '#3B82F6' }] },
-                { weekday: 'Thu', dateNum: '19', location: '阿姆斯特丹', desc: '啟程返港', weather: '多雲', temp: 10, itinerary: [{ id: 30, type: '航班', name: 'CX270 阿姆斯特丹 > 香港', time: '12:30', dep:'AMS', arr:'HKG', note: '機上休息' }]},
+                { weekday: 'Thu', dateNum: '19', location: '阿姆斯特丹', desc: '啟程返港', weather: '多雲', temp: 10, itinerary: [{ id: 30, type: '航班', name: 'CX270 阿姆斯特丹 > 香港', time: '12:30', dep:'AMS', arr:'HKG' }]},
                 { weekday: 'Fri', dateNum: '20', location: '香港', desc: '蜜月結束', weather: '晴朗', temp: 22, itinerary: [{ id: 32, type: '景點', name: 'Home Sweet Home', time: '07:30', color: '#10B981' }] }
             ]);
 
@@ -293,13 +265,6 @@
                 activeModal.value = null;
             };
 
-            const deleteItem = () => {
-                const dayItin = daysData.value[selectedDayIndex.value].itinerary;
-                const idx = dayItin.findIndex(i => i.id === editId.value);
-                dayItin.splice(idx, 1);
-                activeModal.value = null;
-            };
-
             const handleFileUpload = (e) => { 
                 const file = e.target.files[0]; 
                 if (file) { 
@@ -318,8 +283,7 @@
 
             const openExpenseModal = () => { 
                 expForm.value = {
-                    category: '飲食',
-                    name: '',
+                    category: '飲食', name: '', 
                     date: new Date().toISOString().substr(0,10),
                     currency: (daysData.value[selectedDayIndex.value].location === '倫敦' ? '英鎊' : '歐元'),
                     amount: null
@@ -345,7 +309,7 @@
             watch([currentTab, activeModal, selectedDayIndex], () => nextTick(() => lucide.createIcons()));
             nextTick(() => lucide.createIcons());
 
-            return { currentTab, tabs, daysData, selectedDayIndex, sortedItinerary, activeModal, isEditing, form, colorPalette, categories, expenseList, expForm, shoppingList, shopForm, totalGBP, totalEUR, gbpVal, eurVal, openAddModal, editItem, saveItem, deleteItem, openDayEditModal, openExpenseModal, addExpense, getIcon, getWeatherIcon, handleFileUpload, addShopping, removeItem };
+            return { currentTab, tabs, daysData, selectedDayIndex, sortedItinerary, activeModal, isEditing, form, colorPalette, categories, expenseList, expForm, shoppingList, shopForm, totalGBP, totalEUR, gbpVal, eurVal, openAddModal, editItem, saveItem, openDayEditModal, openExpenseModal, addExpense, getIcon, getWeatherIcon, handleFileUpload, addShopping, removeItem };
         }
     }).mount('#app');
 </script>
