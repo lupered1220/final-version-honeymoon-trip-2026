@@ -75,9 +75,14 @@
                                 <i data-lucide="plane" class="w-4 h-4 text-amber-400"></i>
                                 <span class="text-sm font-bold tracking-wide">{{ item.name }}</span>
                             </div>
-                            <button @click.stop="openGoogleMaps(item.name)" class="p-1 hover:bg-white/20 rounded">
-                                <i data-lucide="navigation" class="w-4 h-4"></i>
-                            </button>
+                            <div class="flex gap-2">
+                                <button @click.stop="openGoogleMaps(item.name)" class="p-1 hover:bg-white/20 rounded">
+                                    <i data-lucide="navigation" class="w-4 h-4"></i>
+                                </button>
+                                <button @click.stop="deleteItineraryItem(item.id)" class="p-1 hover:bg-red-500/20 rounded text-red-400">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="flex justify-between items-center text-center px-2">
                             <div class="flex-1 text-left">
@@ -94,6 +99,7 @@
                                 <p class="text-[10px] opacity-50 uppercase tracking-widest">Arrival</p>
                             </div>
                         </div>
+                        <p v-if="item.note" class="text-[10px] mt-4 pt-3 border-t border-white/10 opacity-70 whitespace-pre-line">{{ item.note }}</p>
                     </div>
                     
                     <div v-else 
@@ -107,6 +113,9 @@
                                 <div class="flex items-center gap-2">
                                     <button @click.stop="openGoogleMaps(item.name)" class="p-1 hover:bg-black/5 rounded text-stone-400">
                                         <i data-lucide="navigation" class="w-4 h-4"></i>
+                                    </button>
+                                    <button @click.stop="deleteItineraryItem(item.id)" class="p-1 hover:bg-red-500/20 rounded text-red-300">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
                                     <span class="text-sm font-bold text-stone-500">{{ item.time }}</span>
                                 </div>
@@ -183,7 +192,7 @@
 
     <div v-if="activeModal" class="modal-overlay" @click.self="activeModal = null">
         <div class="modal-content">
-            <h3 class="text-xl font-bold mb-6">編輯項目</h3>
+            <h3 class="text-xl font-bold mb-6">{{ isEditing ? '修改項目' : '新增項目' }}</h3>
             
             <div v-if="activeModal === 'itinerary'" class="space-y-4">
                 <div>
@@ -197,39 +206,64 @@
                     </div>
                     <div>
                         <label class="text-xs font-bold text-stone-400 ml-1">類型</label>
-                        <select v-model="form.type">
+                        <select v-model="form.type" @change="updateFormColor">
                             <option>景點</option><option>美食</option><option>交通</option><option>住宿</option><option>航班</option>
                         </select>
+                    </div>
+                </div>
+                <div v-if="form.type === '航班'" class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-stone-400 ml-1">起飛城市代碼</label>
+                        <input v-model="form.dep" placeholder="HKG">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-stone-400 ml-1">到達城市代碼</label>
+                        <input v-model="form.arr" placeholder="LHR">
                     </div>
                 </div>
                 <div>
                     <label class="text-xs font-bold text-stone-400 ml-1">備註說明</label>
                     <textarea v-model="form.note" placeholder="輸入詳細備註、訂位編號或地址..." rows="3" class="w-full mt-1"></textarea>
                 </div>
-                <button @click="saveItem" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">儲存</button>
+                <button @click="saveItem" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">儲存行程</button>
             </div>
 
             <div v-if="activeModal === 'shopping'" class="space-y-4">
                 <input v-model="shopForm.name" placeholder="想買什麼？">
-                <input type="file" @change="handleFileUpload" accept="image/*" class="text-xs">
-                <button @click="addShopping" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">加入</button>
+                <label class="block">
+                    <span class="text-xs font-bold text-stone-400 ml-1">上傳照片</span>
+                    <input type="file" @change="handleFileUpload" accept="image/*" class="text-xs mt-1">
+                </label>
+                <button @click="addShopping" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">加入清單</button>
             </div>
-            
+
             <div v-if="activeModal === 'expense'" class="space-y-4">
-                <select v-model="expForm.currency">
-                    <option value="英鎊">英鎊 (£)</option>
-                    <option value="歐元">歐元 (€)</option>
-                </select>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs font-bold text-stone-400 ml-1">貨幣</label>
+                        <select v-model="expForm.currency">
+                            <option value="英鎊">英鎊 (£)</option>
+                            <option value="歐元">歐元 (€)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-stone-400 ml-1">分類</label>
+                        <select v-model="expForm.category">
+                            <option>飲食</option><option>交通</option><option>景點</option><option>購物</option><option>住宿</option>
+                        </select>
+                    </div>
+                </div>
                 <input v-model="expForm.name" placeholder="支出項目">
                 <input type="number" v-model.number="expForm.amount" placeholder="金額">
-                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">確認</button>
+                <input type="date" v-model="expForm.date">
+                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">確認紀錄</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const { createApp, ref, computed, nextTick, watch } = Vue;
+    const { createApp, ref, computed, nextTick, watch, onMounted } = Vue;
     createApp({
         setup() {
             const currentTab = ref('itinerary');
@@ -247,22 +281,38 @@
                 { id: 'info', name: '工具', icon: 'info' }
             ];
 
-            const daysData = ref([
+            // 預設行程資料
+            const defaultDaysData = [
                 { weekday: 'Tue', dateNum: '10', location: '倫敦', desc: '蜜月第一天', weather: '多雲', temp: 12, itinerary: [
-                    { id: 1, type: '航班', name: 'CX239 香港 > 倫敦', time: '10:40', dep:'HKG', arr:'LHR', note: '' },
+                    { id: 1, type: '航班', name: 'CX239 香港 > 倫敦', time: '10:40', dep:'HKG', arr:'LHR', note: '', color: '#1f2937' },
                     { id: 2, type: '住宿', name: 'Merit Kensington Hotel London', time: '19:30', color: '#8B5CF6', note: '鄰近地鐵站' }
                 ]},
                 { weekday: 'Wed', dateNum: '11', location: '牛津', desc: 'Outlet 購物', weather: '晴朗', temp: 10, itinerary: [{ id: 4, type: '交通', name: 'Bicester Village Oxford', time: '09:30', color: '#4A4238', note: '' }] },
                 { weekday: 'Thu', dateNum: '12', location: '倫敦', desc: '大笨鐘', weather: '陣雨', temp: 11, itinerary: [{ id: 7, type: '景點', name: 'Covent Garden London', time: '10:00', color: '#3B82F6', note: '' }] },
                 { weekday: 'Fri', dateNum: '13', location: '倫敦', desc: '美食巡禮', weather: '多雲', temp: 13, itinerary: [{ id: 11, type: '美食', name: 'Borough Market London', time: '12:00', color: '#10B981', note: '' }] },
                 { weekday: 'Sat', dateNum: '14', location: '倫敦', desc: '車路士球賽', weather: '多雲', temp: 12, itinerary: [{ id: 14, type: '景點', name: 'Stamford Bridge Stadium London', time: '17:30', color: '#F59E0B', note: '' }] },
-                { weekday: 'Sun', dateNum: '15', location: '倫敦 > 荷蘭', desc: '跨國飛行', weather: '陰天', temp: 9, itinerary: [{ id: 17, type: '航班', name: 'BA440 倫敦 > 阿姆斯特丹', time: '14:10', dep:'LHR', arr:'AMS', note: '' }]},
+                { weekday: 'Sun', dateNum: '15', location: '倫敦 > 荷蘭', desc: '跨國飛行', weather: '陰天', temp: 9, itinerary: [{ id: 17, type: '航班', name: 'BA440 倫敦 > 阿姆斯特丹', time: '14:10', dep:'LHR', arr:'AMS', note: '', color: '#1f2937' }]},
                 { weekday: 'Mon', dateNum: '16', location: '阿姆斯特丹', desc: '運河藝術', weather: '陰天', temp: 8, itinerary: [{ id: 21, type: '景點', name: 'Van Gogh Museum Amsterdam', time: '10:00', color: '#3B82F6', note: '' }] },
                 { weekday: 'Tue', dateNum: '17', location: '布魯塞爾', desc: '朱古力', weather: '晴朗', temp: 10, itinerary: [{ id: 24, type: '景點', name: 'Grand Place Brussels', time: '11:00', color: '#3B82F6', note: '' }] },
                 { weekday: 'Wed', dateNum: '18', location: '鹿特丹', desc: '現代建築', weather: '陰天', temp: 9, itinerary: [{ id: 27, type: '景點', name: 'Cube Houses Rotterdam', time: '11:00', color: '#3B82F6', note: '' }] },
-                { weekday: 'Thu', dateNum: '19', location: '阿姆斯特丹', desc: '啟程返港', weather: '多雲', temp: 10, itinerary: [{ id: 30, type: '航班', name: 'CX270 阿姆斯特丹 > 香港', time: '12:30', dep:'AMS', arr:'HKG', note: '' }]},
+                { weekday: 'Thu', dateNum: '19', location: '阿姆斯特丹', desc: '啟程返港', weather: '多雲', temp: 10, itinerary: [{ id: 30, type: '航班', name: 'CX270 阿姆斯特丹 > 香港', time: '12:30', dep:'AMS', arr:'HKG', note: '', color: '#1f2937' }]},
                 { weekday: 'Fri', dateNum: '20', location: '香港', desc: '蜜月結束', weather: '晴朗', temp: 22, itinerary: [{ id: 32, type: '景點', name: 'Home Sweet Home', time: '07:30', color: '#10B981', note: '' }] }
-            ]);
+            ];
+
+            // 初始資料載入 (從 LocalStorage 或 預設值)
+            const loadData = (key, defaultValue) => {
+                const saved = localStorage.getItem(key);
+                return saved ? JSON.parse(saved) : defaultValue;
+            };
+
+            const daysData = ref(loadData('trip_daysData', defaultDaysData));
+            const shoppingList = ref(loadData('trip_shoppingList', []));
+            const expenseList = ref(loadData('trip_expenseList', []));
+
+            // 資料持久化監聽
+            watch(daysData, (val) => localStorage.setItem('trip_daysData', JSON.stringify(val)), { deep: true });
+            watch(shoppingList, (val) => localStorage.setItem('trip_shoppingList', JSON.stringify(val)), { deep: true });
+            watch(expenseList, (val) => localStorage.setItem('trip_expenseList', JSON.stringify(val)), { deep: true });
 
             const sortedItinerary = computed(() => {
                 const items = [...daysData.value[selectedDayIndex.value].itinerary];
@@ -274,8 +324,6 @@
                 window.open(url, '_blank');
             };
 
-            const shoppingList = ref([]);
-            const expenseList = ref([]);
             const form = ref({ type: '景點', name: '', time: '', note: '', color: '#3B82F6', dep: '', arr: '' });
             const shopForm = ref({ name: '', image: null });
             const expForm = ref({ category: '飲食', name: '', date: '', currency: '英鎊', amount: null });
@@ -283,8 +331,23 @@
             const totalGBP = computed(() => expenseList.value.filter(i => i.currency === '英鎊').reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
             const totalEUR = computed(() => expenseList.value.filter(i => i.currency === '歐元').reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
 
-            const openAddModal = () => { isEditing.value = false; form.value = { type: '景點', name: '', time: '', note: '', color: '#3B82F6', dep:'', arr:'' }; activeModal.value = 'itinerary'; };
-            const editItem = (item) => { isEditing.value = true; editId.value = item.id; form.value = { ...item }; activeModal.value = 'itinerary'; };
+            const openAddModal = () => { 
+                isEditing.value = false; 
+                form.value = { type: '景點', name: '', time: '', note: '', color: '#3B82F6', dep:'', arr:'' }; 
+                activeModal.value = 'itinerary'; 
+            };
+            const editItem = (item) => { 
+                isEditing.value = true; 
+                editId.value = item.id; 
+                form.value = { ...item }; 
+                activeModal.value = 'itinerary'; 
+            };
+            
+            const updateFormColor = () => {
+                const colors = {'景點':'#3B82F6','美食':'#10B981','交通':'#4A4238','住宿':'#8B5CF6','航班':'#1f2937'};
+                form.value.color = colors[form.value.type] || '#3B82F6';
+            };
+
             const saveItem = () => {
                 const dayItin = daysData.value[selectedDayIndex.value].itinerary;
                 if(isEditing.value) {
@@ -294,6 +357,14 @@
                     dayItin.push({ id: Date.now(), ...form.value });
                 }
                 activeModal.value = null;
+            };
+
+            const deleteItineraryItem = (id) => {
+                if(confirm('確定要刪除此行程嗎？')) {
+                    const dayItin = daysData.value[selectedDayIndex.value].itinerary;
+                    const idx = dayItin.findIndex(i => i.id === id);
+                    dayItin.splice(idx, 1);
+                }
             };
 
             const handleFileUpload = (e) => { 
@@ -311,10 +382,11 @@
                 activeModal.value = null; 
             };
             const openExpenseModal = () => { 
+                const loc = daysData.value[selectedDayIndex.value].location;
                 expForm.value = {
                     category: '飲食', name: '', 
                     date: new Date().toISOString().substr(0,10),
-                    currency: (daysData.value[selectedDayIndex.value].location === '倫敦' ? '英鎊' : '歐元'),
+                    currency: (loc.includes('倫敦') || loc.includes('牛津') ? '英鎊' : '歐元'),
                     amount: null
                 };
                 activeModal.value = 'expense'; 
@@ -325,17 +397,19 @@
                 activeModal.value = null; 
             };
             const removeItem = (type, idx) => { 
-                if(type === 'shopping') shoppingList.value.splice(idx, 1); 
-                else expenseList.value.splice(idx, 1); 
+                if(confirm('確定要刪除嗎？')) {
+                    if(type === 'shopping') shoppingList.value.splice(idx, 1); 
+                    else expenseList.value.splice(idx, 1); 
+                }
             };
 
             const getIcon = (t) => ({'景點':'camera','美食':'utensils','交通':'bus','住宿':'bed','航班':'plane'}[t] || 'map-pin');
             const getWeatherIcon = (w) => ({'晴朗':'sun','多雲':'cloud','陰天':'cloudy','陣雨':'cloud-rain'}[w] || 'cloud');
 
             watch([currentTab, activeModal, selectedDayIndex], () => nextTick(() => lucide.createIcons()));
-            nextTick(() => lucide.createIcons());
+            onMounted(() => lucide.createIcons());
 
-            return { currentTab, tabs, daysData, selectedDayIndex, sortedItinerary, activeModal, isEditing, form, expenseList, expForm, shoppingList, shopForm, totalGBP, totalEUR, gbpVal, eurVal, openAddModal, editItem, saveItem, openExpenseModal, addExpense, getIcon, getWeatherIcon, handleFileUpload, addShopping, removeItem, openGoogleMaps };
+            return { currentTab, tabs, daysData, selectedDayIndex, sortedItinerary, activeModal, isEditing, form, expenseList, expForm, shoppingList, shopForm, totalGBP, totalEUR, gbpVal, eurVal, openAddModal, editItem, saveItem, openExpenseModal, addExpense, getIcon, getWeatherIcon, handleFileUpload, addShopping, removeItem, openGoogleMaps, deleteItineraryItem, updateFormColor };
         }
     }).mount('#app');
 </script>
