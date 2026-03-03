@@ -219,142 +219,190 @@
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyAVJ8v_feOY-ejbxypVDbLl2FG4nqEcIqk",
-        authDomain: "honeymoon-2026-603b1.firebaseapp.com",
-        projectId: "honeymoon-2026-603b1",
-        storageBucket: "honeymoon-2026-603b1.firebasestorage.app",
-        messagingSenderId: "134468542600",
-        appId: "1:134468542600:web:551d3d36f0a61c2ae07f3d"
-    };
+const firebaseConfig = {
+    apiKey: "AIzaSyAVJ8v_feOY-ejbxypVDbLl2FG4nqEcIqk",
+    authDomain: "honeymoon-2026-603b1.firebaseapp.com",
+    projectId: "honeymoon-2026-603b1",
+    storageBucket: "honeymoon-2026-603b1.firebasestorage.app",
+    messagingSenderId: "134468542600",
+    appId: "1:134468542600:web:551d3d36f0a61c2ae07f3d"
+};
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const docRef = db.collection("trips").doc("honeymoon_2026");
+// 初始化 Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+// 確保路徑正確：trips 集合下的 honeymoon_2026 文件
+const docRef = db.collection("trips").doc("honeymoon_2026");
 
-    const { createApp, ref, computed, nextTick, watch, onMounted } = Vue;
-    createApp({
-        setup() {
-            const loading = ref(true);
-            const currentTab = ref('itinerary');
-            const selectedDayIndex = ref(0);
-            const activeModal = ref(null);
-            const isEditing = ref(false);
-            const editId = ref(null);
-            const gbpVal = ref(1);
-            const eurVal = ref(1);
-            const daysData = ref([]);
-            const shoppingList = ref([]);
-            const expenseList = ref([]);
+const { createApp, ref, computed, nextTick, watch, onMounted } = Vue;
 
-            const tabs = [
-                { id: 'itinerary', name: '行程', icon: 'map-pin' },
-                { id: 'shopping', name: '購物', icon: 'shopping-basket' },
-                { id: 'expense', name: '花費', icon: 'banknote' },
-                { id: 'info', name: '工具', icon: 'info' }
-            ];
+createApp({
+    setup() {
+        const loading = ref(true);
+        const currentTab = ref('itinerary');
+        const selectedDayIndex = ref(0);
+        const activeModal = ref(null);
+        const isEditing = ref(false);
+        const editId = ref(null);
+        const gbpVal = ref(1);
+        const eurVal = ref(1);
 
-            onMounted(() => {
-                docRef.onSnapshot((doc) => {
-                    if (doc.exists()) {
-                        const data = doc.data();
-                        daysData.value = data.daysData || [];
-                        shoppingList.value = data.shoppingList || [];
-                        expenseList.value = data.expenseList || [];
-                    }
-                    loading.value = false;
-                    nextTick(() => lucide.createIcons());
-                }, (err) => {
-                    console.error("Firestore Error:", err);
-                    loading.value = false;
-                });
-            });
+        const daysData = ref([]);
+        const shoppingList = ref([]);
+        const expenseList = ref([]);
 
-            const saveToCloud = () => {
-                docRef.set({
-                    daysData: JSON.parse(JSON.stringify(daysData.value)),
-                    shoppingList: JSON.parse(JSON.stringify(shoppingList.value)),
-                    expenseList: JSON.parse(JSON.stringify(expenseList.value))
-                }, { merge: true });
-            };
+        const tabs = [
+            { id: 'itinerary', name: '行程', icon: 'map-pin' },
+            { id: 'shopping', name: '購物', icon: 'shopping-basket' },
+            { id: 'expense', name: '花費', icon: 'banknote' },
+            { id: 'info', name: '工具', icon: 'info' }
+        ];
 
-            const sortedItinerary = computed(() => {
-                if (!daysData.value[selectedDayIndex.value]) return [];
-                return [...daysData.value[selectedDayIndex.value].itinerary].sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-            });
-
-            const openGoogleMaps = (locationName) => {
-                const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationName)}`;
-                window.open(url, '_blank');
-            };
-
-            const form = ref({ type: '景點', name: '', time: '', note: '', color: '#3B82F6', dep: '', arr: '' });
-            const shopForm = ref({ name: '', image: null });
-            const expForm = ref({ category: '飲食', name: '', date: new Date().toISOString().substr(0,10), currency: '英鎊', amount: null });
-
-            const totalGBP = computed(() => expenseList.value.filter(i => i.currency === '英鎊').reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
-            const totalEUR = computed(() => expenseList.value.filter(i => i.currency === '歐元').reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
-
-            const handleFileUpload = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 600; // 壓縮寬度確保不超過 1MB
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        shopForm.value.image = canvas.toDataURL('image/jpeg', 0.7);
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            };
-
-            const openAddModal = () => { isEditing.value = false; form.value = { type: '景點', name: '', time: '', note: '', color: '#3B82F6', dep:'', arr:'' }; activeModal.value = 'itinerary'; };
-            const editItem = (item) => { isEditing.value = true; editId.value = item.id; form.value = { ...item }; activeModal.value = 'itinerary'; };
-            const saveItem = () => {
-                const itin = daysData.value[selectedDayIndex.value].itinerary;
-                if(isEditing.value) {
-                    const idx = itin.findIndex(i => i.id === editId.value);
-                    itin[idx] = { ...form.value };
+        // 監聽雲端資料
+        onMounted(() => {
+            docRef.onSnapshot((doc) => {
+                // 注意：在 compat 模式下 exists 是一個屬性或透過 .exists 檢查
+                if (doc && doc.exists) {
+                    const data = doc.data();
+                    daysData.value = data.daysData || [];
+                    shoppingList.value = data.shoppingList || [];
+                    expenseList.value = data.expenseList || [];
                 } else {
-                    itin.push({ id: Date.now(), ...form.value });
+                    console.log("雲端尚無資料，請手動新增第一筆。");
+                    daysData.value = []; // 或者放入預設的 defaultDaysData
                 }
+                loading.value = false;
+                nextTick(() => lucide.createIcons());
+            }, (error) => {
+                console.error("Firebase 連線失敗:", error);
+                loading.value = false;
+            });
+        });
+
+        const saveToCloud = () => {
+            docRef.set({
+                daysData: JSON.parse(JSON.stringify(daysData.value)),
+                shoppingList: JSON.parse(JSON.stringify(shoppingList.value)),
+                expenseList: JSON.parse(JSON.stringify(expenseList.value))
+            }, { merge: true }).catch(err => alert("同步失敗: " + err));
+        };
+
+        // 計算屬性
+        const sortedItinerary = computed(() => {
+            const day = daysData.value[selectedDayIndex.value];
+            if (!day || !day.itinerary) return [];
+            return [...day.itinerary].sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+        });
+
+        const totalGBP = computed(() => expenseList.value.filter(i => i.currency === '英鎊').reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
+        const totalEUR = computed(() => expenseList.value.filter(i => i.currency === '歐元').reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
+
+        // 各種操作函數
+        const form = ref({ type: '景點', name: '', time: '', note: '', color: '#3B82F6', dep: '', arr: '' });
+        const shopForm = ref({ name: '', image: null });
+        const expForm = ref({ category: '飲食', name: '', date: '', currency: '英鎊', amount: null });
+
+        const openAddModal = () => { 
+            isEditing.value = false; 
+            form.value = { type: '景點', name: '', time: '', note: '', color: '#3B82F6', dep:'', arr:'' }; 
+            activeModal.value = 'itinerary'; 
+        };
+
+        const editItem = (item) => { 
+            isEditing.value = true; 
+            editId.value = item.id; 
+            form.value = { ...item }; 
+            activeModal.value = 'itinerary'; 
+        };
+
+        const openExpenseModal = () => {
+            const loc = daysData.value[selectedDayIndex.value]?.location || '';
+            expForm.value = {
+                category: '飲食', name: '', 
+                date: new Date().toISOString().substr(0,10),
+                currency: (loc.includes('倫敦') ? '英鎊' : '歐元'),
+                amount: null
+            };
+            activeModal.value = 'expense';
+        };
+
+        const saveItem = () => {
+            if (!daysData.value[selectedDayIndex.value]) return;
+            const itin = daysData.value[selectedDayIndex.value].itinerary;
+            if (isEditing.value) {
+                const idx = itin.findIndex(i => i.id === editId.value);
+                if (idx !== -1) itin[idx] = { ...form.value };
+            } else {
+                itin.push({ id: Date.now(), ...form.value });
+            }
+            saveToCloud();
+            activeModal.value = null;
+        };
+
+        const deleteItineraryItem = (id) => {
+            if(confirm('確定要刪除此行程嗎？')) {
+                const itin = daysData.value[selectedDayIndex.value].itinerary;
+                daysData.value[selectedDayIndex.value].itinerary = itin.filter(i => i.id !== id);
                 saveToCloud();
-                activeModal.value = null;
-            };
+            }
+        };
 
-            const deleteItineraryItem = (id) => {
-                if(confirm('確定刪除？')) {
-                    daysData.value[selectedDayIndex.value].itinerary = daysData.value[selectedDayIndex.value].itinerary.filter(i => i.id !== id);
-                    saveToCloud();
-                }
-            };
+        const addShopping = () => {
+            if(!shopForm.value.name) return;
+            shoppingList.value.push({...shopForm.value});
+            saveToCloud();
+            shopForm.value = { name: '', image: null };
+            activeModal.value = null;
+        };
 
-            const addShopping = () => { if(!shopForm.value.name) return; shoppingList.value.push({...shopForm.value}); saveToCloud(); activeModal.value = null; };
-            const addExpense = () => { if(!expForm.value.amount) return; expenseList.value.push({...expForm.value}); saveToCloud(); activeModal.value = null; };
-            const removeItem = (type, idx) => { if(confirm('確定刪除？')) { if(type==='shopping') shoppingList.value.splice(idx,1); else expenseList.value.splice(idx,1); saveToCloud(); }};
-            const updateFormColor = () => { const colors = {'景點':'#3B82F6','美食':'#10B981','交通':'#4A4238','住宿':'#8B5CF6','航班':'#1f2937'}; form.value.color = colors[form.value.type] || '#3B82F6'; };
+        const addExpense = () => {
+            if(!expForm.value.amount) return;
+            expenseList.value.push({...expForm.value});
+            saveToCloud();
+            activeModal.value = null;
+        };
 
-            watch([currentTab, activeModal, selectedDayIndex], () => nextTick(() => lucide.createIcons()));
+        const removeItem = (type, idx) => {
+            if(confirm('確定要刪除嗎？')) {
+                if(type === 'shopping') shoppingList.value.splice(idx, 1);
+                else expenseList.value.splice(idx, 1);
+                saveToCloud();
+            }
+        };
 
-            return { loading, currentTab, tabs, daysData, selectedDayIndex, sortedItinerary, activeModal, isEditing, form, expenseList, expForm, shoppingList, shopForm, totalGBP, totalEUR, gbpVal, eurVal, openAddModal, editItem, saveItem, addShopping, addExpense, removeItem, openGoogleMaps, deleteItineraryItem, updateFormColor, handleFileUpload,
-                getIcon: (t) => ({'景點':'camera','美食':'utensils','交通':'bus','住宿':'bed','航班':'plane'}[t] || 'map-pin'),
-                getWeatherIcon: (w) => ({'晴朗':'sun','多雲':'cloud','陰天':'cloudy','陣雨':'cloud-rain'}[w] || 'cloud')
-            };
-        }
-    }).mount('#app');
+        const updateFormColor = () => {
+            const colors = {'景點':'#3B82F6','美食':'#10B981','交通':'#4A4238','住宿':'#8B5CF6','航班':'#1f2937'};
+            form.value.color = colors[form.value.type] || '#3B82F6';
+        };
+
+        const openGoogleMaps = (name) => {
+            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank');
+        };
+
+        const handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (f) => shopForm.value.image = f.target.result;
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // 監聽分頁切換時重新渲染圖標
+        watch([currentTab, activeModal, selectedDayIndex], () => nextTick(() => lucide.createIcons()));
+
+        // 重要：必須將 HTML 中有用到的函數全部回傳
+        return { 
+            loading, currentTab, tabs, daysData, selectedDayIndex, sortedItinerary, 
+            activeModal, isEditing, form, expenseList, expForm, shoppingList, shopForm, 
+            totalGBP, totalEUR, gbpVal, eurVal, 
+            openAddModal, editItem, saveItem, openExpenseModal, addExpense, 
+            deleteItineraryItem, updateFormColor, openGoogleMaps, handleFileUpload, addShopping, removeItem,
+            getIcon: (t) => ({'景點':'camera','美食':'utensils','交通':'bus','住宿':'bed','航班':'plane'}[t] || 'map-pin'),
+            getWeatherIcon: (w) => ({'晴朗':'sun','多雲':'cloud','陰天':'cloudy','陣雨':'cloud-rain'}[w] || 'cloud')
+        };
+    }
+}).mount('#app');
 </script>
 </body>
 </html>
