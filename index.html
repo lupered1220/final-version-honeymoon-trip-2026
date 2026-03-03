@@ -34,7 +34,7 @@
         .fab { position: fixed; bottom: 100px; right: 25px; width: 60px; height: 60px; background-color: var(--british-brown); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(0,0,0,0.2); z-index: 50; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; }
         .modal-content { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 24px; max-height: 85vh; overflow-y: auto; }
-        input, select, textarea { width: 100%; padding: 12px; background: #F8F6F2; border-radius: 12px; border: 1px solid #E2DDD5; margin-top: 5px; font-size: 16px; }
+        input, select, textarea { width: 100%; padding: 12px; background: #F8F6F2; border-radius: 12px; border: 1px solid #E2DDD5; margin-top: 5px; font-size: 16px; color: #4A4238; }
         .shop-card { background: white; border-radius: 15px; overflow: hidden; border: 1px solid #EFEBE5; position: relative; }
         .shop-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f0f0f0; }
     </style>
@@ -54,7 +54,7 @@
             </div>
 
             <div class="px-5">
-                <div class="flex items-center justify-between mb-4 bg-stone-50 p-4 rounded-2xl border border-stone-100" @click="openDayEditModal">
+                <div class="flex items-center justify-between mb-4 bg-stone-50 p-4 rounded-2xl border border-stone-100">
                     <div>
                         <h2 class="text-2xl font-bold text-stone-800">{{ daysData[selectedDayIndex].location }}</h2>
                         <p class="text-xs text-stone-500">{{ daysData[selectedDayIndex].desc }}</p>
@@ -131,7 +131,6 @@
                     </div>
                 </div>
             </div>
-            <div v-if="shoppingList.length === 0" class="text-center py-20 text-stone-300 text-sm">尚未加入任何購物項目</div>
             <div class="fab" @click="activeModal = 'shopping'"><i data-lucide="plus" class="w-8 h-8"></i></div>
         </section>
 
@@ -184,20 +183,45 @@
     <div v-if="activeModal" class="modal-overlay" @click.self="activeModal = null">
         <div class="modal-content">
             <h3 class="text-xl font-bold mb-6">編輯</h3>
+            
             <div v-if="activeModal === 'itinerary'" class="space-y-4">
                 <input v-model="form.name" placeholder="項目名稱">
                 <input v-model="form.time" placeholder="時間 (例如 09:30)">
                 <button @click="saveItem" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">儲存</button>
             </div>
+
             <div v-if="activeModal === 'shopping'" class="space-y-4">
                 <input v-model="shopForm.name" placeholder="想買什麼？">
                 <input type="file" @change="handleFileUpload" accept="image/*" class="text-xs">
                 <button @click="addShopping" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">加入</button>
             </div>
+
             <div v-if="activeModal === 'expense'" class="space-y-4">
-                <input v-model="expForm.name" placeholder="支出項目">
-                <input type="number" v-model.number="expForm.amount" placeholder="金額">
-                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">確認</button>
+                <div>
+                    <label class="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">貨幣 Currency</label>
+                    <select v-model="expForm.currency" class="w-full mt-1">
+                        <option value="英鎊">英鎊 (£) - GBP</option>
+                        <option value="歐元">歐元 (€) - EUR</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">項目與金額</label>
+                    <input v-model="expForm.name" placeholder="支出項目 (例如：晚餐)">
+                    <input type="number" v-model.number="expForm.amount" placeholder="金額 (例如：50.5)">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">分類與日期</label>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <select v-model="expForm.category">
+                            <option>飲食</option><option>交通</option><option>景點</option><option>購物</option><option>住宿</option>
+                        </select>
+                        <input type="date" v-model="expForm.date" class="!mt-0">
+                    </div>
+                </div>
+
+                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg mt-4">確認紀錄</button>
             </div>
         </div>
     </div>
@@ -222,7 +246,6 @@
                 { id: 'info', name: '工具', icon: 'info' }
             ];
 
-            // 行程數據
             const daysData = ref([
                 { weekday: 'Tue', dateNum: '10', location: '倫敦', desc: '蜜月第一天', weather: '多雲', temp: 12, itinerary: [
                     { id: 1, type: '航班', name: 'CX239 香港 > 倫敦', time: '10:40', dep:'HKG', arr:'LHR' },
@@ -245,7 +268,6 @@
                 return items.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
             });
 
-            // 新增：開啟 Google Maps 函數
             const openGoogleMaps = (locationName) => {
                 const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationName)}`;
                 window.open(url, '_blank');
@@ -287,15 +309,21 @@
                 shopForm.value = { name: '', image: null }; 
                 activeModal.value = null; 
             };
+
+            // 開啟花費彈窗：增加自動判斷所在地區貨幣的邏輯
             const openExpenseModal = () => { 
+                const currentLocation = daysData.value[selectedDayIndex.value].location;
                 expForm.value = {
-                    category: '飲食', name: '', 
+                    category: '飲食', 
+                    name: '', 
                     date: new Date().toISOString().substr(0,10),
-                    currency: (daysData.value[selectedDayIndex.value].location === '倫敦' ? '英鎊' : '歐元'),
+                    // 自動判斷：如果地點包含倫敦，預設為英鎊，否則為歐元
+                    currency: (currentLocation.includes('倫敦') || currentLocation.includes('牛津') ? '英鎊' : '歐元'),
                     amount: null
                 };
                 activeModal.value = 'expense'; 
             };
+
             const addExpense = () => { 
                 if(!expForm.value.name || !expForm.value.amount) return;
                 expenseList.value.push({...expForm.value}); 
@@ -306,14 +334,13 @@
                 else expenseList.value.splice(idx, 1); 
             };
 
-            const openDayEditModal = () => activeModal.value = 'dayEdit';
             const getIcon = (t) => ({'景點':'camera','美食':'utensils','交通':'bus','住宿':'bed','航班':'plane'}[t] || 'map-pin');
-            const getWeatherIcon = (w) => ({'晴朗':'sun','多雲':'cloud','陰天':'cloudy','有雨':'cloud-rain'}[w] || 'cloud');
+            const getWeatherIcon = (w) => ({'晴朗':'sun','多雲':'cloud','陰天':'cloudy','陣雨':'cloud-rain'}[w] || 'cloud');
 
             watch([currentTab, activeModal, selectedDayIndex], () => nextTick(() => lucide.createIcons()));
             nextTick(() => lucide.createIcons());
 
-            return { currentTab, tabs, daysData, selectedDayIndex, sortedItinerary, activeModal, isEditing, form, expenseList, expForm, shoppingList, shopForm, totalGBP, totalEUR, gbpVal, eurVal, openAddModal, editItem, saveItem, openDayEditModal, openExpenseModal, addExpense, getIcon, getWeatherIcon, handleFileUpload, addShopping, removeItem, openGoogleMaps };
+            return { currentTab, tabs, daysData, selectedDayIndex, sortedItinerary, activeModal, isEditing, form, expenseList, expForm, shoppingList, shopForm, totalGBP, totalEUR, gbpVal, eurVal, openAddModal, editItem, saveItem, openExpenseModal, addExpense, getIcon, getWeatherIcon, handleFileUpload, addShopping, removeItem, openGoogleMaps };
         }
     }).mount('#app');
 </script>
