@@ -34,7 +34,7 @@
         .fab { position: fixed; bottom: 100px; right: 25px; width: 60px; height: 60px; background-color: var(--british-brown); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(0,0,0,0.2); z-index: 50; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; }
         .modal-content { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 24px; max-height: 85vh; overflow-y: auto; }
-        input, select, textarea { width: 100%; padding: 12px; background: #F8F6F2; border-radius: 12px; border: 1px solid #E2DDD5; margin-top: 5px; font-size: 16px; color: #4A4238; }
+        input, select, textarea { width: 100%; padding: 12px; background: #F8F6F2; border-radius: 12px; border: 1px solid #E2DDD5; margin-top: 5px; font-size: 16px; }
         .shop-card { background: white; border-radius: 15px; overflow: hidden; border: 1px solid #EFEBE5; position: relative; }
         .shop-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f0f0f0; }
     </style>
@@ -111,7 +111,7 @@
                                     <span class="text-sm font-bold text-stone-500">{{ item.time }}</span>
                                 </div>
                             </div>
-                            <p class="text-xs text-stone-500 mt-1">{{ item.note }}</p>
+                            <p class="text-xs text-stone-500 mt-1 whitespace-pre-line">{{ item.note }}</p>
                         </div>
                     </div>
                 </div>
@@ -131,6 +131,7 @@
                     </div>
                 </div>
             </div>
+            <div v-if="shoppingList.length === 0" class="text-center py-20 text-stone-300 text-sm">尚未加入任何購物項目</div>
             <div class="fab" @click="activeModal = 'shopping'"><i data-lucide="plus" class="w-8 h-8"></i></div>
         </section>
 
@@ -182,11 +183,29 @@
 
     <div v-if="activeModal" class="modal-overlay" @click.self="activeModal = null">
         <div class="modal-content">
-            <h3 class="text-xl font-bold mb-6">編輯</h3>
+            <h3 class="text-xl font-bold mb-6">編輯項目</h3>
             
             <div v-if="activeModal === 'itinerary'" class="space-y-4">
-                <input v-model="form.name" placeholder="項目名稱">
-                <input v-model="form.time" placeholder="時間 (例如 09:30)">
+                <div>
+                    <label class="text-xs font-bold text-stone-400 ml-1">項目名稱</label>
+                    <input v-model="form.name" placeholder="例如：大笨鐘 / 晚餐">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-stone-400 ml-1">時間</label>
+                        <input v-model="form.time" placeholder="09:30">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-stone-400 ml-1">類型</label>
+                        <select v-model="form.type">
+                            <option>景點</option><option>美食</option><option>交通</option><option>住宿</option><option>航班</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-stone-400 ml-1">備註說明</label>
+                    <textarea v-model="form.note" placeholder="輸入詳細備註、訂位編號或地址..." rows="3" class="w-full mt-1"></textarea>
+                </div>
                 <button @click="saveItem" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">儲存</button>
             </div>
 
@@ -195,33 +214,15 @@
                 <input type="file" @change="handleFileUpload" accept="image/*" class="text-xs">
                 <button @click="addShopping" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">加入</button>
             </div>
-
+            
             <div v-if="activeModal === 'expense'" class="space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">貨幣 Currency</label>
-                    <select v-model="expForm.currency" class="w-full mt-1">
-                        <option value="英鎊">英鎊 (£) - GBP</option>
-                        <option value="歐元">歐元 (€) - EUR</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">項目與金額</label>
-                    <input v-model="expForm.name" placeholder="支出項目 (例如：晚餐)">
-                    <input type="number" v-model.number="expForm.amount" placeholder="金額 (例如：50.5)">
-                </div>
-
-                <div>
-                    <label class="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">分類與日期</label>
-                    <div class="grid grid-cols-2 gap-2 mt-1">
-                        <select v-model="expForm.category">
-                            <option>飲食</option><option>交通</option><option>景點</option><option>購物</option><option>住宿</option>
-                        </select>
-                        <input type="date" v-model="expForm.date" class="!mt-0">
-                    </div>
-                </div>
-
-                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg mt-4">確認紀錄</button>
+                <select v-model="expForm.currency">
+                    <option value="英鎊">英鎊 (£)</option>
+                    <option value="歐元">歐元 (€)</option>
+                </select>
+                <input v-model="expForm.name" placeholder="支出項目">
+                <input type="number" v-model.number="expForm.amount" placeholder="金額">
+                <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold shadow-lg">確認</button>
             </div>
         </div>
     </div>
@@ -248,19 +249,19 @@
 
             const daysData = ref([
                 { weekday: 'Tue', dateNum: '10', location: '倫敦', desc: '蜜月第一天', weather: '多雲', temp: 12, itinerary: [
-                    { id: 1, type: '航班', name: 'CX239 香港 > 倫敦', time: '10:40', dep:'HKG', arr:'LHR' },
-                    { id: 2, type: '住宿', name: 'Merit Kensington Hotel London', time: '19:30', color: '#8B5CF6' }
+                    { id: 1, type: '航班', name: 'CX239 香港 > 倫敦', time: '10:40', dep:'HKG', arr:'LHR', note: '' },
+                    { id: 2, type: '住宿', name: 'Merit Kensington Hotel London', time: '19:30', color: '#8B5CF6', note: '鄰近地鐵站' }
                 ]},
-                { weekday: 'Wed', dateNum: '11', location: '牛津', desc: 'Outlet 購物', weather: '晴朗', temp: 10, itinerary: [{ id: 4, type: '交通', name: 'Bicester Village Oxford', time: '09:30', color: '#4A4238' }] },
-                { weekday: 'Thu', dateNum: '12', location: '倫敦', desc: '大笨鐘', weather: '陣雨', temp: 11, itinerary: [{ id: 7, type: '景點', name: 'Covent Garden London', time: '10:00', color: '#3B82F6' }] },
-                { weekday: 'Fri', dateNum: '13', location: '倫敦', desc: '美食巡禮', weather: '多雲', temp: 13, itinerary: [{ id: 11, type: '美食', name: 'Borough Market London', time: '12:00', color: '#10B981' }] },
-                { weekday: 'Sat', dateNum: '14', location: '倫敦', desc: '車路士球賽', weather: '多雲', temp: 12, itinerary: [{ id: 14, type: '景點', name: 'Stamford Bridge Stadium London', time: '17:30', color: '#F59E0B' }] },
-                { weekday: 'Sun', dateNum: '15', location: '倫敦 > 荷蘭', desc: '跨國飛行', weather: '陰天', temp: 9, itinerary: [{ id: 17, type: '航班', name: 'BA440 倫敦 > 阿姆斯特丹', time: '14:10', dep:'LHR', arr:'AMS' }]},
-                { weekday: 'Mon', dateNum: '16', location: '阿姆斯特丹', desc: '運河藝術', weather: '陰天', temp: 8, itinerary: [{ id: 21, type: '景點', name: 'Van Gogh Museum Amsterdam', time: '10:00', color: '#3B82F6' }] },
-                { weekday: 'Tue', dateNum: '17', location: '布魯塞爾', desc: '朱古力', weather: '晴朗', temp: 10, itinerary: [{ id: 24, type: '景點', name: 'Grand Place Brussels', time: '11:00', color: '#3B82F6' }] },
-                { weekday: 'Wed', dateNum: '18', location: '鹿特丹', desc: '現代建築', weather: '陰天', temp: 9, itinerary: [{ id: 27, type: '景點', name: 'Cube Houses Rotterdam', time: '11:00', color: '#3B82F6' }] },
-                { weekday: 'Thu', dateNum: '19', location: '阿姆斯特丹', desc: '啟程返港', weather: '多雲', temp: 10, itinerary: [{ id: 30, type: '航班', name: 'CX270 阿姆斯特丹 > 香港', time: '12:30', dep:'AMS', arr:'HKG' }]},
-                { weekday: 'Fri', dateNum: '20', location: '香港', desc: '蜜月結束', weather: '晴朗', temp: 22, itinerary: [{ id: 32, type: '景點', name: 'Home Sweet Home', time: '07:30', color: '#10B981' }] }
+                { weekday: 'Wed', dateNum: '11', location: '牛津', desc: 'Outlet 購物', weather: '晴朗', temp: 10, itinerary: [{ id: 4, type: '交通', name: 'Bicester Village Oxford', time: '09:30', color: '#4A4238', note: '' }] },
+                { weekday: 'Thu', dateNum: '12', location: '倫敦', desc: '大笨鐘', weather: '陣雨', temp: 11, itinerary: [{ id: 7, type: '景點', name: 'Covent Garden London', time: '10:00', color: '#3B82F6', note: '' }] },
+                { weekday: 'Fri', dateNum: '13', location: '倫敦', desc: '美食巡禮', weather: '多雲', temp: 13, itinerary: [{ id: 11, type: '美食', name: 'Borough Market London', time: '12:00', color: '#10B981', note: '' }] },
+                { weekday: 'Sat', dateNum: '14', location: '倫敦', desc: '車路士球賽', weather: '多雲', temp: 12, itinerary: [{ id: 14, type: '景點', name: 'Stamford Bridge Stadium London', time: '17:30', color: '#F59E0B', note: '' }] },
+                { weekday: 'Sun', dateNum: '15', location: '倫敦 > 荷蘭', desc: '跨國飛行', weather: '陰天', temp: 9, itinerary: [{ id: 17, type: '航班', name: 'BA440 倫敦 > 阿姆斯特丹', time: '14:10', dep:'LHR', arr:'AMS', note: '' }]},
+                { weekday: 'Mon', dateNum: '16', location: '阿姆斯特丹', desc: '運河藝術', weather: '陰天', temp: 8, itinerary: [{ id: 21, type: '景點', name: 'Van Gogh Museum Amsterdam', time: '10:00', color: '#3B82F6', note: '' }] },
+                { weekday: 'Tue', dateNum: '17', location: '布魯塞爾', desc: '朱古力', weather: '晴朗', temp: 10, itinerary: [{ id: 24, type: '景點', name: 'Grand Place Brussels', time: '11:00', color: '#3B82F6', note: '' }] },
+                { weekday: 'Wed', dateNum: '18', location: '鹿特丹', desc: '現代建築', weather: '陰天', temp: 9, itinerary: [{ id: 27, type: '景點', name: 'Cube Houses Rotterdam', time: '11:00', color: '#3B82F6', note: '' }] },
+                { weekday: 'Thu', dateNum: '19', location: '阿姆斯特丹', desc: '啟程返港', weather: '多雲', temp: 10, itinerary: [{ id: 30, type: '航班', name: 'CX270 阿姆斯特丹 > 香港', time: '12:30', dep:'AMS', arr:'HKG', note: '' }]},
+                { weekday: 'Fri', dateNum: '20', location: '香港', desc: '蜜月結束', weather: '晴朗', temp: 22, itinerary: [{ id: 32, type: '景點', name: 'Home Sweet Home', time: '07:30', color: '#10B981', note: '' }] }
             ]);
 
             const sortedItinerary = computed(() => {
@@ -277,7 +278,7 @@
             const expenseList = ref([]);
             const form = ref({ type: '景點', name: '', time: '', note: '', color: '#3B82F6', dep: '', arr: '' });
             const shopForm = ref({ name: '', image: null });
-            const expForm = ref({ category: '飲食', name: '', date: '', currency: '歐元', amount: null });
+            const expForm = ref({ category: '飲食', name: '', date: '', currency: '英鎊', amount: null });
 
             const totalGBP = computed(() => expenseList.value.filter(i => i.currency === '英鎊').reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
             const totalEUR = computed(() => expenseList.value.filter(i => i.currency === '歐元').reduce((sum, i) => sum + (Number(i.amount) || 0), 0));
@@ -309,21 +310,15 @@
                 shopForm.value = { name: '', image: null }; 
                 activeModal.value = null; 
             };
-
-            // 開啟花費彈窗：增加自動判斷所在地區貨幣的邏輯
             const openExpenseModal = () => { 
-                const currentLocation = daysData.value[selectedDayIndex.value].location;
                 expForm.value = {
-                    category: '飲食', 
-                    name: '', 
+                    category: '飲食', name: '', 
                     date: new Date().toISOString().substr(0,10),
-                    // 自動判斷：如果地點包含倫敦，預設為英鎊，否則為歐元
-                    currency: (currentLocation.includes('倫敦') || currentLocation.includes('牛津') ? '英鎊' : '歐元'),
+                    currency: (daysData.value[selectedDayIndex.value].location === '倫敦' ? '英鎊' : '歐元'),
                     amount: null
                 };
                 activeModal.value = 'expense'; 
             };
-
             const addExpense = () => { 
                 if(!expForm.value.name || !expForm.value.amount) return;
                 expenseList.value.push({...expForm.value}); 
