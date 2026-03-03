@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HONEYMOON 2026 | UK & NL</title>
+    <title>HONEYMOON 2026 | UK & NL & BE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -59,12 +59,6 @@
                         <h2 class="text-xl font-bold text-stone-800">{{ daysData[selectedDayIndex].location }}</h2>
                         <p class="text-xs text-stone-500">{{ daysData[selectedDayIndex].desc }}</p>
                     </div>
-                    <div class="text-right flex flex-col items-end">
-                        <div class="flex items-center gap-1 text-amber-600">
-                            <i data-lucide="cloud-sun" class="w-4 h-4"></i>
-                            <span class="text-sm font-bold">{{ daysData[selectedDayIndex].temp }}°C</span>
-                        </div>
-                    </div>
                 </div>
 
                 <div v-for="(item, idx) in sortedItinerary" :key="idx" class="mb-4 relative group">
@@ -74,7 +68,7 @@
                                 <i data-lucide="plane" class="w-4 h-4 text-amber-400"></i>
                                 <span class="text-xs font-bold">{{ item.name }}</span>
                             </div>
-                            <button @click="removeItem('itinerary', idx)" class="text-white/30 text-xs">刪除</button>
+                            <button @click="removeItem('itinerary', idx)" class="text-white/30 text-xs"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
                         </div>
                         <div class="flex justify-between items-center text-center">
                             <div class="flex-1 text-left">
@@ -91,8 +85,8 @@
                         </div>
                     </div>
                     
-                    <div v-else class="rounded-2xl p-4 border flex items-start gap-3 bg-white shadow-sm border-l-4" :style="{ borderLeftColor: item.color || '#5D5344' }">
-                        <i :data-lucide="getIcon(item.type)" class="w-5 h-5 mt-1" :style="{ color: item.color }"></i>
+                    <div v-else class="rounded-2xl p-4 border flex items-start gap-3 bg-white shadow-sm border-l-4" :style="{ borderLeftColor: getColorByType(item.type) }">
+                        <i :data-lucide="getIcon(item.type)" class="w-5 h-5 mt-1" :style="{ color: getColorByType(item.type) }"></i>
                         <div class="flex-1">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-bold text-stone-800 text-sm">{{ item.name }}</h3>
@@ -105,6 +99,7 @@
                         </div>
                     </div>
                 </div>
+                <div v-if="sortedItinerary.length === 0" class="text-center py-10 text-stone-300 text-sm">今日暫無行程</div>
             </div>
             <div class="fab" @click="activeModal = 'addItinerary'"><i data-lucide="plus" class="w-8 h-8"></i></div>
         </section>
@@ -177,10 +172,7 @@
                 </div>
             </div>
             <div class="border-t pt-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-red-800 flex items-center gap-2"><i data-lucide="shield-alert"></i> 緊急備忘錄</h2>
-                    <button @click="activeModal = 'memo'" class="bg-stone-800 text-white text-xs px-3 py-2 rounded-lg font-bold">上傳文件</button>
-                </div>
+                <h2 class="text-2xl font-bold text-red-800 flex items-center gap-2 mb-4"><i data-lucide="shield-alert"></i> 緊急備忘錄</h2>
                 <div class="space-y-4">
                     <div v-for="(memo, idx) in memoList" :key="idx" class="bg-white p-4 rounded-2xl border border-red-50 shadow-sm">
                         <div class="flex justify-between items-start mb-2"><p class="font-bold text-stone-800">{{ memo.title }}</p><button @click="removeItem('memo', idx)" class="text-red-300"><i data-lucide="x-circle" class="w-4 h-4"></i></button></div>
@@ -188,6 +180,7 @@
                         <p class="text-xs text-stone-500 whitespace-pre-line">{{ memo.content }}</p>
                     </div>
                 </div>
+                <button @click="activeModal = 'memo'" class="w-full mt-4 py-3 bg-stone-100 text-stone-600 rounded-xl text-sm font-bold border-dashed border-2">上傳緊急文件</button>
             </div>
         </section>
     </main>
@@ -198,7 +191,7 @@
 
     <div v-if="activeModal === 'addItinerary'" class="modal-overlay" @click.self="activeModal = null">
         <div class="modal-content">
-            <h3 class="text-xl font-bold text-stone-800 mb-4">新增 {{ daysData[selectedDayIndex].dateNum }} 行程</h3>
+            <h3 class="text-xl font-bold text-stone-800 mb-4">新增行程</h3>
             <div class="space-y-3">
                 <input v-model="itineraryForm.name" placeholder="行程名稱 (例如: 參觀大笨鐘)">
                 <div class="grid grid-cols-2 gap-2">
@@ -215,11 +208,11 @@
                     <input v-model="itineraryForm.dep" placeholder="起飛 (HKG)">
                     <input v-model="itineraryForm.arr" placeholder="抵達 (LHR)">
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-stone-400">標籤顏色:</span>
-                    <input type="color" v-model="itineraryForm.color" class="w-10 h-10 p-1 !bg-transparent border-none">
-                </div>
                 <textarea v-model="itineraryForm.note" placeholder="備註內容..." rows="3"></textarea>
+                <div class="text-[10px] text-stone-400 px-2 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: getColorByType(itineraryForm.type) }"></span>
+                    系統將自動標記為 {{ itineraryForm.type }} 專屬顏色
+                </div>
                 <button @click="addItineraryItem" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold mt-2">加入行程</button>
             </div>
         </div>
@@ -245,11 +238,11 @@
                 <button @click="addExpense" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">確認紀錄</button>
             </div>
             <div v-if="activeModal === 'memo'" class="space-y-4">
-                <h3 class="text-xl font-bold text-stone-800 mb-2">上傳緊急文件</h3>
+                <h3 class="text-xl font-bold text-stone-800 mb-2">上傳文件</h3>
                 <input v-model="memoForm.title" placeholder="標題">
-                <textarea v-model="memoForm.content" placeholder="備註內容" rows="3"></textarea>
+                <textarea v-model="memoForm.content" placeholder="備註" rows="3"></textarea>
                 <input type="file" @change="handleFileUpload($event, 'memo')" accept="image/*">
-                <button @click="addMemo" class="w-full py-4 bg-red-800 text-white rounded-2xl font-bold">儲存文件</button>
+                <button @click="addMemo" class="w-full py-4 bg-red-800 text-white rounded-2xl font-bold">儲存</button>
             </div>
         </div>
     </div>
@@ -280,65 +273,68 @@ createApp({
         const calcGBP = ref(1);
         const calcEUR = ref(1);
 
-        const daysData = ref([
-            { weekday: 'Tue', dateNum: '10 Mar', location: '抵達倫敦', desc: 'Merit Kensington Hotel', temp: '11', itinerary: [
-                { type: '航班', name: 'CX239', time: '10:40-17:20', dep: 'HKG', arr: 'LHR', color: '#1f2937' },
-                { type: '住宿', name: 'Merit Kensington Hotel', time: '19:30', note: 'Check-in 入住', color: '#8B5CF6' },
-                { type: '美食', name: 'The Troubadour', time: '20:30', note: '歷史氣息晚餐', color: '#f59e0b' }
+        // 預設行程 (Day 1 - 10)
+        const defaultDays = [
+            { weekday: 'Tue', dateNum: '10 Mar', location: '抵達倫敦', desc: 'Merit Kensington Hotel', itinerary: [
+                { type: '航班', name: 'CX239', time: '10:40-17:20', dep: 'HKG', arr: 'LHR' },
+                { type: '住宿', name: 'Merit Kensington Hotel', time: '19:30', note: 'Check-in 入住' },
+                { type: '美食', name: 'The Troubadour', time: '20:30', note: '飯店步行可達，具歷史氣息' }
             ]},
-            { weekday: 'Wed', dateNum: '11 Mar', location: '倫敦/牛津', desc: '購物與文化', temp: '13', itinerary: [
-                { type: '交通', name: '前往 Bicester Village', time: '09:00', note: 'Marylebone 車站火車', color: '#1d4ed8' },
-                { type: '美食', name: 'Ottolenghi', time: '12:30', note: '地中海料理', color: '#f59e0b' },
-                { type: '景點', name: '牛津大學城', time: '15:30', note: 'Oxford 觀光', color: '#3B82F6' }
+            { weekday: 'Wed', dateNum: '11 Mar', location: '倫敦/牛津', desc: '購物與文化', itinerary: [
+                { type: '交通', name: 'Bicester Village Outlet', time: '09:00', note: 'Marylebone 搭火車約1小時' },
+                { type: '美食', name: 'Ottolenghi (Outlet)', time: '12:30', note: '創意地中海料理' },
+                { type: '景點', name: '牛津大學城 (Oxford)', time: '15:30', note: '觀光巡禮' }
             ]},
-            { weekday: 'Thu', dateNum: '12 Mar', location: '倫敦市內', desc: '藝術與地標', temp: '12', itinerary: [
-                { type: '景點', name: '科芬園', time: '10:00', note: '街頭藝人', color: '#3B82F6' },
-                { type: '景點', name: '自然史博物館', time: '13:30', color: '#3B82F6' },
-                { type: '景點', name: '大笨鐘 & 國會大廈', time: '16:30', color: '#3B82F6' },
-                { type: '美食', name: 'Flat Iron', time: '19:00', note: '平價牛排', color: '#f59e0b' }
+            { weekday: 'Thu', dateNum: '12 Mar', location: '倫敦市內', desc: '藝術與地標', itinerary: [
+                { type: '景點', name: '科芬園 Covent Garden', time: '10:00' },
+                { type: '景點', name: '自然史博物館', time: '13:30' },
+                { type: '景點', name: '大笨鐘 & 國會大廈', time: '16:30' },
+                { type: '美食', name: 'Flat Iron', time: '19:00', note: '平價牛排' }
             ]},
-            { weekday: 'Fri', dateNum: '13 Mar', location: '倫敦美食', desc: 'King\'s Cross', temp: '10', itinerary: [
-                { type: '美食', name: 'Fatto (King\'s Cross)', time: '12:30', color: '#f59e0b' },
-                { type: '景點', name: '倫敦眼區散步', time: '15:00', color: '#3B82F6' },
-                { type: '美食', name: 'Borough Market', time: '18:30', color: '#f59e0b' }
+            { weekday: 'Fri', dateNum: '13 Mar', location: '倫敦美食', desc: 'King\'s Cross', itinerary: [
+                { type: '美食', name: 'Fatto (King\'s Cross)', time: '12:30' },
+                { type: '景點', name: '倫敦眼區散步', time: '15:00' },
+                { type: '美食', name: 'Borough Market', time: '18:30', note: '異國美食' }
             ]},
-            { weekday: 'Sat', dateNum: '14 Mar', location: '倫敦', desc: '車路士球賽', temp: '14', itinerary: [
-                { type: '景點', name: 'Stamford Bridge', time: '12:00', note: '球場參觀', color: '#3B82F6' },
-                { type: '景點', name: '車路士 vs 紐卡素', time: '17:30', note: '英超現場', color: '#1d4ed8' },
-                { type: '美食', name: 'Butcher\'s Hook', time: '20:00', color: '#f59e0b' }
+            { weekday: 'Sat', dateNum: '14 Mar', location: '倫敦', desc: '車路士球賽日', itinerary: [
+                { type: '景點', name: 'Stamford Bridge', time: '12:00', note: '球場與博物館參觀' },
+                { type: '景點', name: '英超：車路士 vs 紐卡素', time: '17:30', note: '熱血現場' },
+                { type: '美食', name: 'Butcher\'s Hook', time: '20:00', note: '球場周邊' }
             ]},
-            { weekday: 'Sun', dateNum: '15 Mar', location: '倫敦 > 阿姆斯特丹', desc: '跨國飛行', temp: '12', itinerary: [
-                { type: '航班', name: 'BA440', time: '14:10-16:35', dep: 'LHR', arr: 'AMS', color: '#1f2937' },
-                { type: '住宿', name: 'Inntel Hotels Amsterdam', time: '18:00', color: '#8B5CF6' },
-                { type: '美食', name: 'Loetje Centraal', time: '19:30', note: '招牌牛排', color: '#f59e0b' }
+            { weekday: 'Sun', dateNum: '15 Mar', location: '倫敦 > 阿姆斯特丹', desc: '跨國移動', itinerary: [
+                { type: '景點', name: 'Holland Park', time: '10:00' },
+                { type: '航班', name: 'BA440', time: '14:10-16:35', dep: 'LHR', arr: 'AMS' },
+                { type: '住宿', name: 'Inntel Hotels Amsterdam Centre', time: '18:00' },
+                { type: '美食', name: 'Loetje Centraal', time: '19:30', note: '知名牛排' }
             ]},
-            { weekday: 'Mon', dateNum: '16 Mar', location: '阿姆斯特丹', desc: '經典運河', temp: '11', itinerary: [
-                { type: '景點', name: '梵谷博物館', time: '10:00', color: '#3B82F6' },
-                { type: '景點', name: '荷蘭國家博物館', time: '13:00', color: '#3B82F6' },
-                { type: '景點', name: '運河遊船', time: '16:00', color: '#3B82F6' },
-                { type: '美食', name: 'The Pancake Bakery', time: '19:00', color: '#f59e0b' }
+            { weekday: 'Mon', dateNum: '16 Mar', location: '阿姆斯特丹', desc: '梵谷與運河', itinerary: [
+                { type: '景點', name: '梵谷博物館', time: '10:00' },
+                { type: '景點', name: '荷蘭國家博物館', time: '13:00' },
+                { type: '景點', name: '運河遊船', time: '16:00' },
+                { type: '美食', name: 'The Pancake Bakery', time: '19:00', note: '荷蘭煎餅' }
             ]},
-            { weekday: 'Tue', dateNum: '17 Mar', location: '比利時', desc: '布魯塞爾一日遊', temp: '10', itinerary: [
-                { type: '景點', name: '布魯塞爾大廣場', time: '11:00', color: '#3B82F6' },
-                { type: '景點', name: '尿尿小童', time: '14:00', color: '#3B82F6' },
-                { type: '美食', name: 'Chez Léon', time: '18:00', note: '淡菜薯條', color: '#f59e0b' }
+            { weekday: 'Tue', dateNum: '17 Mar', location: '比利時一日遊', desc: '布魯塞爾閃電遊', itinerary: [
+                { type: '景點', name: '布魯塞爾大廣場', time: '11:00' },
+                { type: '景點', name: '尿尿小童', time: '14:00', note: '買巧克力與鬆餅' },
+                { type: '美食', name: 'Chez Léon', time: '18:00', note: '淡菜薯條' }
             ]},
-            { weekday: 'Wed', dateNum: '18 Mar', location: '鹿特丹', desc: '現代建築巡禮', temp: '12', itinerary: [
-                { type: '景點', name: '方塊屋 Cubic Houses', time: '10:30', color: '#3B82F6' },
-                { type: '景點', name: 'Markthal 拱形市場', time: '13:00', color: '#3B82F6' },
-                { type: '景點', name: '伊拉斯謨橋', time: '15:30', color: '#3B82F6' }
+            { weekday: 'Wed', dateNum: '18 Mar', location: '鹿特丹一日遊', desc: '現代建築', itinerary: [
+                { type: '景點', name: '方塊屋 Cubic Houses', time: '10:30' },
+                { type: '景點', name: 'Markthal 拱形大市場', time: '13:00' },
+                { type: '景點', name: '伊拉斯謨橋', time: '15:30' }
             ]},
-            { weekday: 'Thu', dateNum: '19 Mar', location: '歸途', desc: '阿姆斯特丹 > 香港', temp: '11', itinerary: [
-                { type: '航班', name: 'CX270', time: '12:30', dep: 'AMS', arr: 'HKG', color: '#1f2937' }
+            { weekday: 'Thu', dateNum: '19 Mar', location: '回程', desc: '史基浦機場 > 香港', itinerary: [
+                { type: '交通', name: '前往史基浦機場', time: '09:00' },
+                { type: '航班', name: 'CX270', time: '12:30-07:30+1', dep: 'AMS', arr: 'HKG' }
             ]}
-        ]);
+        ];
 
+        const daysData = ref(defaultDays);
         const shoppingList = ref([]);
         const expenseList = ref([]);
         const memoList = ref([]);
 
-        // 表單數據
-        const itineraryForm = ref({ name: '', time: '12:00', type: '景點', note: '', color: '#3B82F6', dep: '', arr: '' });
+        const itineraryForm = ref({ name: '', time: '12:00', type: '景點', note: '', dep: '', arr: '' });
         const shopForm = ref({ name: '', image: null });
         const expForm = ref({ currency: 'GBP', category: '飲食', name: '', date: '', amount: null });
         const memoForm = ref({ title: '', content: '', image: null });
@@ -366,13 +362,23 @@ createApp({
             }, { merge: true });
         };
 
+        // 自動顏色分配邏輯
+        const getColorByType = (type) => {
+            const colors = {
+                '景點': '#3B82F6', // 藍
+                '美食': '#F59E0B', // 橘
+                '交通': '#1D4ED8', // 深藍
+                '住宿': '#8B5CF6', // 紫
+                '航班': '#1F2937'  // 深灰
+            };
+            return colors[type] || '#5D5344';
+        };
+
         const addItineraryItem = () => {
             if (!itineraryForm.value.name) return;
-            const currentDay = daysData.value[selectedDayIndex.value];
-            if (!currentDay.itinerary) currentDay.itinerary = [];
-            currentDay.itinerary.push({ ...itineraryForm.value });
+            daysData.value[selectedDayIndex.value].itinerary.push({ ...itineraryForm.value });
             saveToCloud();
-            itineraryForm.value = { name: '', time: '12:00', type: '景點', note: '', color: '#3B82F6', dep: '', arr: '' };
+            itineraryForm.value = { name: '', time: '12:00', type: '景點', note: '', dep: '', arr: '' };
             activeModal.value = null;
         };
 
@@ -389,6 +395,7 @@ createApp({
         };
 
         const addShopping = () => {
+            if (!shopForm.value.name) return;
             shoppingList.value.push({ ...shopForm.value });
             saveToCloud();
             shopForm.value = { name: '', image: null };
@@ -396,6 +403,7 @@ createApp({
         };
 
         const addExpense = () => {
+            if (!expForm.value.name) return;
             expenseList.value.unshift({ ...expForm.value });
             saveToCloud();
             expForm.value = { currency: 'GBP', category: '飲食', name: '', date: '', amount: null };
@@ -435,7 +443,7 @@ createApp({
         return { 
             loading, currentTab, daysData, selectedDayIndex, sortedItinerary, 
             shoppingList, expenseList, memoList, shopForm, expForm, memoForm, itineraryForm, activeModal, 
-            totalGBP, totalEUR, calcGBP, calcEUR,
+            totalGBP, totalEUR, calcGBP, calcEUR, getColorByType,
             tabs: [{ id: 'itinerary', name: '行程', icon: 'map-pin' }, { id: 'shopping', name: '購物', icon: 'shopping-basket' }, { id: 'expense', name: '花費', icon: 'banknote' }, { id: 'info', name: '工具', icon: 'info' }],
             getIcon: (t) => ({'景點':'camera','美食':'utensils','交通':'bus','住宿':'bed','航班':'plane'}[t] || 'map-pin'),
             getExpIcon: (c) => ({'交通':'car','飲食':'utensils','住宿':'home','門票':'ticket','購物':'shopping-bag','其他':'more-horizontal'}[c] || 'dollar-sign'),
