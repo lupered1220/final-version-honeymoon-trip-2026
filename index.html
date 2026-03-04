@@ -9,15 +9,12 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
         :root { --brown: #5D5344; --bg: #FDFBF7; }
         
-        /* 徹底修正引號間距問題 */
         body { 
-            /* 調整字體順序：英文與符號優先使用系統字體以避免 Noto Serif 的間距問題 */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, 'Noto Serif TC'; 
             background: var(--bg); 
             margin: 0; 
             color: #4A4238; 
             -webkit-tap-highlight-color: transparent;
-            /* 強制取消合字與字距調整 */
             font-variant-ligatures: none;
             font-kerning: none;
             letter-spacing: 0px !important;
@@ -53,6 +50,7 @@
         input, select, textarea { width: 100%; padding: 15px; background: #F8F6F2; border-radius: 12px; border: 1px solid #E2DDD5; margin-top: 8px; font-size: 16px; font-family: sans-serif; }
         
         [v-cloak] { display: none !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -85,14 +83,14 @@
                     <i data-lucide="cloud-sun" class="w-5 text-stone-400"></i>
                     <div class="flex-1">
                         <div class="text-[10px] font-bold uppercase tracking-tighter">Live Weather</div>
-                        <div class="text-xs">查看{{ days[dayIdx].location }}即時氣溫、雨量</div>
+                        <div class="text-xs">查看即時天氣</div>
                     </div>
                     <i data-lucide="chevron-right" class="w-4"></i>
                 </a>
             </div>
 
-            <div v-for="(item, idx) in days[dayIdx].itinerary" :key="idx">
-                <div v-if="item.type === '航班'" @click="startEditItinerary(idx)" class="bg-stone-900 text-white p-6 rounded-3xl mb-5 shadow-xl relative overflow-hidden">
+            <div v-for="(item, idx) in sortedItinerary" :key="idx">
+                <div v-if="item.type === '航班'" @click="startEditItinerary(item.originalIdx)" class="bg-stone-900 text-white p-6 rounded-3xl mb-5 shadow-xl relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="plane" class="w-20 h-20"></i></div>
                     <div class="flex justify-between items-center mb-4 text-amber-400 text-[10px] font-bold tracking-widest">
                         <span>FLIGHT {{ item.name }}</span>
@@ -107,7 +105,7 @@
                 </div>
 
                 <div v-else class="item-card" :style="{'--type-color': getColor(item.type)}">
-                    <div @click="startEditItinerary(idx)">
+                    <div @click="startEditItinerary(item.originalIdx)">
                         <div class="flex justify-between items-start mb-2">
                             <span class="type-badge">{{ item.type }}</span>
                             <span class="text-[11px] font-bold text-stone-400">{{ item.time }}</span>
@@ -122,7 +120,7 @@
                             <i data-lucide="map-pin" class="w-3"></i> 導航去
                         </a>
                         <div v-else></div>
-                        <i data-lucide="more-horizontal" @click="startEditItinerary(idx)" class="w-4 text-stone-300 cursor-pointer"></i>
+                        <i data-lucide="more-horizontal" @click="startEditItinerary(item.originalIdx)" class="w-4 text-stone-300 cursor-pointer"></i>
                     </div>
                 </div>
             </div>
@@ -148,12 +146,12 @@
                 <div class="p-4 bg-orange-500 text-white rounded-2xl border flex items-center gap-4 shadow-md">
                     <div class="w-10 h-10 bg-white/20 text-white flex items-center justify-center rounded-full font-bold">£</div>
                     <input type="number" v-model="gbpIn" class="flex-1 !m-0 !p-2 !bg-transparent border-b border-white/30 rounded-none font-bold text-white">
-                    <div class="font-bold text-white">≈ HK${{ (gbpIn * 10.41).toFixed(1) }}</div>
+                    <div class="font-bold text-white">≈ HK${{ (gbpIn * rates.GBP).toFixed(1) }}</div>
                 </div>
                 <div class="p-4 bg-blue-600 text-white rounded-2xl border flex items-center gap-4 shadow-md">
                     <div class="w-10 h-10 bg-white/20 text-white flex items-center justify-center rounded-full font-bold">€</div>
                     <input type="number" v-model="eurIn" class="flex-1 !m-0 !p-2 !bg-transparent border-b border-white/30 rounded-none font-bold text-white">
-                    <div class="font-bold text-white">≈ HK${{ (eurIn * 9.06).toFixed(1) }}</div>
+                    <div class="font-bold text-white">≈ HK${{ (eurIn * rates.EUR).toFixed(1) }}</div>
                 </div>
             </div>
             <div v-for="(m, i) in memos" :key="i" class="bg-white p-4 rounded-2xl border mb-4 shadow-sm">
@@ -206,15 +204,13 @@
                 <div class="grid grid-cols-2 gap-3">
                     <input type="time" v-model="form.time">
                     <select v-model="form.type">
-                        <option>景點</option>
-                        <option>美食</option>
-                        <option>交通</option>
-                        <option>住宿</option>
-                        <option>購物</option>
-                        <option>航班</option>
+                        <option>景點</option><option>美食</option><option>交通</option>
+                        <option>住宿</option><option>購物</option><option>航班</option>
                     </select>
                 </div>
-                <div v-if="form.type === '航班'" class="grid grid-cols-2 gap-3"><input v-model="form.dep" placeholder="從"><input v-model="form.arr" placeholder="到"></div>
+                <div v-if="form.type === '航班'" class="grid grid-cols-2 gap-3">
+                    <input v-model="form.dep" placeholder="從"><input v-model="form.arr" placeholder="到">
+                </div>
                 <textarea v-model="form.note" placeholder="備注..."></textarea>
                 <div class="flex gap-2">
                     <button v-if="editIdx !== null" @click="delItem('itinerary', editIdx)" class="flex-1 py-4 text-red-500 font-bold bg-red-50 rounded-2xl">刪除</button>
@@ -263,16 +259,16 @@
 <script>
     const { createApp, ref, computed, watch, nextTick } = Vue;
     const initialDays = [
-        { weekday: '週二', dateNum: '3月10', location: '抵達倫敦', desc: '辦理入住與休息', itinerary: [{type:'航班',name:'CX239',time:'10:40-17:20',dep:'HKG',arr:'LHR',note:''}] },
+        { weekday: '週二', dateNum: '3月10', location: '抵達倫敦', desc: '辦理入住與休息', itinerary: [{type:'航班',name:'CX239',time:'10:40',dep:'HKG',arr:'LHR',note:''}] },
         { weekday: '週三', dateNum: '3月11', location: '牛津/Bicester', desc: '購物與逛街', itinerary: [] },
         { weekday: '週四', dateNum: '3月12', location: '倫敦市區', desc: '著名地標巡禮', itinerary: [] },
         { weekday: '週五', dateNum: '3月13', location: '波羅市場', desc: '美食之旅', itinerary: [] },
         { weekday: '週六', dateNum: '3月14', location: '球賽日', desc: '現場球賽體驗', itinerary: [] },
-        { weekday: '週日', dateNum: '3月15', location: '跨國移動', desc: '前往阿姆斯特丹', itinerary: [{type:'航班',name:'BA440',time:'14:10-16:35',dep:'LHR',arr:'AMS',note:''}] },
+        { weekday: '週日', dateNum: '3月15', location: '跨國移動', desc: '前往阿姆斯特丹', itinerary: [{type:'航班',name:'BA440',time:'14:10',dep:'LHR',arr:'AMS',note:''}] },
         { weekday: '週一', dateNum: '3月16', location: '阿姆斯特丹', desc: '運河巡禮', itinerary: [] },
         { weekday: '週二', dateNum: '3月17', location: '布魯塞爾', desc: '一日城市遊', itinerary: [] },
         { weekday: '週三', dateNum: '3月18', location: '鹿特丹', desc: '現代建築遊覽', itinerary: [] },
-        { weekday: '週四', dateNum: '3月19', location: '啟程回港', desc: '旅程完美結束', itinerary: [{type:'航班',name:'CX270',time:'12:30-07:30',dep:'AMS',arr:'HKG',note:''}] }
+        { weekday: '週四', dateNum: '3月19', location: '啟程回港', desc: '旅程完美結束', itinerary: [{type:'航班',name:'CX270',time:'12:30',dep:'AMS',arr:'HKG',note:''}] }
     ];
 
     createApp({
@@ -289,6 +285,7 @@
             const form = ref({});
             const gbpIn = ref(100);
             const eurIn = ref(100);
+            const rates = ref({ GBP: 10.41, EUR: 9.06 });
 
             let db;
             try {
@@ -310,6 +307,18 @@
                     nextTick(() => lucide.createIcons());
                 });
             } catch (e) { console.error(e); }
+
+            // 自動按時間排序的 Computed 屬性
+            const sortedItinerary = computed(() => {
+                const currentDay = days.value[dayIdx.value];
+                if (!currentDay || !currentDay.itinerary) return [];
+                
+                return currentDay.itinerary
+                    .map((item, index) => ({ ...item, originalIdx: index }))
+                    .sort((a, b) => {
+                        return a.time.localeCompare(b.time);
+                    });
+            });
 
             const sync = () => {
                 if (db) db.collection("trips").doc("v2026_FINAL_STABLE").set({
@@ -355,10 +364,10 @@
             };
 
             watch([tab, dayIdx, showModal], () => nextTick(() => lucide.createIcons()));
-            setTimeout(() => lucide.createIcons(), 1000);
 
             return {
-                tab, dayIdx, days, shopping, memos, expenses, showModal, zoomSrc, editIdx, form, gbpIn, eurIn,
+                tab, dayIdx, days, shopping, memos, expenses, showModal, zoomSrc, editIdx, form, gbpIn, eurIn, rates,
+                sortedItinerary,
                 totalGBP: computed(() => expenses.value.filter(e=>e.currency==='GBP').reduce((a,b)=>a+(Number(b.amount)||0), 0)),
                 totalEUR: computed(() => expenses.value.filter(e=>e.currency==='EUR').reduce((a,b)=>a+(Number(b.amount)||0), 0)),
                 openAddModal: () => {
