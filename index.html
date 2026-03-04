@@ -8,26 +8,32 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
         :root { --brown: #5D5344; --bg: #FDFBF7; }
-        body { font-family: 'Noto Serif TC', serif; background: var(--bg); margin: 0; color: #4A4238; -webkit-tap-highlight-color: transparent; }
+        
+        /* 修正單引號 spacing 問題 */
+        body { 
+            font-family: 'Noto Serif TC', serif; 
+            background: var(--bg); 
+            margin: 0; 
+            color: #4A4238; 
+            -webkit-tap-highlight-color: transparent;
+            font-variant-ligatures: none; 
+            letter-spacing: -0.01em;
+        }
         
         .banner-box { position: fixed; top: 0; width: 100%; height: 180px; background: #A9D5E6; z-index: 1; display: flex; justify-content: center; align-items: center; }
         .banner-box img { width: 100%; height: 100%; object-fit: contain; }
 
         .container { background: white; border-radius: 30px 30px 0 0; margin-top: 160px; position: relative; z-index: 10; min-height: 100vh; padding-bottom: 120px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
         
-        /* 歐式手帳風行程卡片 */
         .item-card { background: #FCFAF5; border-radius: 16px; padding: 18px; margin-bottom: 16px; border: 1px solid #E8E2D6; position: relative; overflow: hidden; box-shadow: 2px 2px 8px rgba(0,0,0,0.02); }
         .item-card::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--type-color); }
         .type-badge { background: var(--type-color); color: white; font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 4px; letter-spacing: 1px; }
         
-        /* 天氣 Widget 樣式 */
         .weather-widget { background: #F4F2EE; border: 1px solid #E2DDD5; border-radius: 12px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; margin-top: 12px; color: #7A7267; text-decoration: none; transition: background 0.2s; }
         .weather-widget:active { background: #E8E6E0; }
 
-        /* 導航按鈕 */
         .nav-btn { background: #F1EFE9; color: #8C8273; font-size: 10px; font-weight: bold; padding: 5px 12px; border-radius: 20px; display: flex; align-items: center; gap: 4px; border: 1px solid #E2DDD5; }
 
-        /* 圖片放大 */
         .img-zoom-view { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 999; display: flex; align-items: center; justify-content: center; }
         .img-zoom-view img { max-width: 95%; max-height: 85%; border-radius: 8px; }
 
@@ -107,13 +113,13 @@
                         <p v-if="item.note" class="text-xs text-stone-500 leading-relaxed italic">{{ item.note }}</p>
                     </div>
                     <div class="mt-4 flex justify-between items-center border-t border-stone-100 pt-3">
-                        <a v-if="['景點','美食','住宿','交通'].includes(item.type)" 
+                        <a v-if="['景點','美食','住宿','交通','購物'].includes(item.type)" 
                            :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(item.name + ' ' + days[dayIdx].location)" 
                            target="_blank" class="nav-btn">
                             <i data-lucide="map-pin" class="w-3"></i> 導航去
                         </a>
                         <div v-else></div>
-                        <i data-lucide="more-horizontal" @click="startEditItinerary(idx)" class="w-4 text-stone-300"></i>
+                        <i data-lucide="more-horizontal" @click="startEditItinerary(idx)" class="w-4 text-stone-300 cursor-pointer"></i>
                     </div>
                 </div>
             </div>
@@ -194,7 +200,17 @@
             <div v-if="showModal === 'addItinerary'" class="space-y-4">
                 <h3 class="font-bold text-lg">編輯行程</h3>
                 <input v-model="form.name" placeholder="名稱">
-                <div class="grid grid-cols-2 gap-3"><input type="time" v-model="form.time"><select v-model="form.type"><option>景點</option><option>美食</option><option>交通</option><option>住宿</option><option>航班</option></select></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="time" v-model="form.time">
+                    <select v-model="form.type">
+                        <option>景點</option>
+                        <option>美食</option>
+                        <option>交通</option>
+                        <option>住宿</option>
+                        <option>購物</option>
+                        <option>航班</option>
+                    </select>
+                </div>
                 <div v-if="form.type === '航班'" class="grid grid-cols-2 gap-3"><input v-model="form.dep" placeholder="從"><input v-model="form.arr" placeholder="到"></div>
                 <textarea v-model="form.note" placeholder="備注..."></textarea>
                 <div class="flex gap-2">
@@ -358,7 +374,7 @@
                     const d = prompt("副標題:", days.value[dayIdx.value].desc);
                     if(l) { days.value[dayIdx.value].location=l; days.value[dayIdx.value].desc=d; sync(); }
                 },
-                getColor: (t) => ({'景點':'#5D5344','美食':'#C19A6B','交通':'#4A90E2','住宿':'#A389D4','航班':'#2c2c2c'}[t] || '#EEE'),
+                getColor: (t) => ({'景點':'#5D5344','美食':'#C19A6B','交通':'#4A90E2','住宿':'#A389D4','航班':'#2c2c2c','購物':'#D489A3'}[t] || '#EEE'),
                 tabs: [{id:'itinerary',name:'行程',icon:'map-pinned'},{id:'shopping',name:'購物',icon:'shopping-bag'},{id:'tools',name:'工具',icon:'wrench'},{id:'expense',name:'花費',icon:'banknote'}]
             }
         }
