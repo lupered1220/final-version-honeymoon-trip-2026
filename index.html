@@ -10,20 +10,41 @@
         :root { --brown: #5D5344; --bg: #FDFBF7; }
         body { font-family: 'Noto Serif TC', serif; background: var(--bg); margin: 0; color: #4A4238; -webkit-tap-highlight-color: transparent; }
         
-        /* Banner 強制完整顯示 */
+        /* Banner 保持完整 */
         .banner-box { position: fixed; top: 0; width: 100%; height: 180px; background: #A9D5E6; z-index: 1; display: flex; justify-content: center; align-items: center; }
         .banner-box img { width: 100%; height: 100%; object-fit: contain; }
 
         .container { background: white; border-radius: 30px 30px 0 0; margin-top: 160px; position: relative; z-index: 10; min-height: 100vh; padding-bottom: 120px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
         
-        /* 行程卡片側邊顏色比例提升 */
-        .item-card { background: white; border-radius: 18px; padding: 18px; margin-bottom: 15px; border: 1px solid #F0F0F0; position: relative; overflow: hidden; }
-        .item-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: var(--type-color); }
+        /* 歐洲手帳風行程卡片 */
+        .item-card { 
+            background: #FCFAF5; 
+            border-radius: 16px; 
+            padding: 18px; 
+            margin-bottom: 16px; 
+            border: 1px solid #E8E2D6; 
+            position: relative; 
+            overflow: hidden; 
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.02);
+        }
+        .item-card::after { 
+            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--type-color); 
+        }
+        .type-badge {
+            background: var(--type-color);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 1px;
+        }
         
-        /* 圖片點開放大 */
-        .img-zoom-view { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; display: flex; align-items: center; justify-content: center; }
-        .img-zoom-view img { max-width: 95%; max-height: 85%; object-fit: contain; border-radius: 10px; }
+        /* 圖片放大 */
+        .img-zoom-view { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 999; display: flex; align-items: center; justify-content: center; }
+        .img-zoom-view img { max-width: 95%; max-height: 85%; border-radius: 8px; }
 
+        /* 底部導覽 */
         .tab-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #EEE; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .tab-btn { flex: 1; padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; color: #AAA; border:none; background:none; }
         .tab-btn.active { color: var(--brown); }
@@ -32,7 +53,7 @@
         
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; }
         .modal-body { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; max-height: 85vh; overflow-y: auto; }
-        input, select, textarea { width: 100%; padding: 15px; background: #F8F6F2; border-radius: 12px; border: 1px solid #E2DDD5; margin-top: 8px; font-size: 16px; }
+        input, select, textarea { width: 100%; padding: 15px; background: #F8F6F2; border-radius: 12px; border: 1px solid #E2DDD5; margin-top: 8px; font-size: 16px; font-family: inherit; }
         
         [v-cloak] { display: none !important; }
     </style>
@@ -44,66 +65,62 @@
 
     <div v-if="zoomSrc" class="img-zoom-view" @click="zoomSrc = null">
         <img :src="zoomSrc">
-        <p class="absolute bottom-10 text-white text-sm">點擊任何地方關閉</p>
     </div>
 
     <div class="container">
         <div v-show="tab === 'itinerary'" class="p-5">
             <div class="flex overflow-x-auto gap-3 mb-6 no-scrollbar">
-                <div v-for="(day, i) in days" @click="dayIdx = i" :class="['flex-shrink-0 w-16 h-20 rounded-2xl flex flex-col items-center justify-center border transition-all', dayIdx === i ? 'bg-stone-800 text-white border-stone-800' : 'bg-white text-stone-400']">
-                    <span class="text-[10px]">{{ day.weekday }}</span>
-                    <span class="text-xl font-bold">{{ day.dateNum.split('月')[1] }}</span>
+                <div v-for="(day, i) in days" @click="dayIdx = i" :class="['flex-shrink-0 w-20 h-20 rounded-2xl flex flex-col items-center justify-center border transition-all', dayIdx === i ? 'bg-stone-800 text-white border-stone-800 shadow-md' : 'bg-white text-stone-400']">
+                    <span class="text-[9px] font-bold uppercase mb-1">{{ day.weekday }}</span>
+                    <span class="text-sm font-bold">{{ day.dateNum }}</span>
                 </div>
             </div>
 
-            <div class="flex justify-between items-center mb-6 p-4 bg-stone-50 rounded-2xl border" @click="editTitle">
+            <div class="flex justify-between items-center mb-6 p-4 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200" @click="editTitle">
                 <div>
-                    <h2 class="text-2xl font-bold text-stone-800">{{ days[dayIdx].location }}</h2>
-                    <p class="text-xs text-stone-400 mt-1">{{ days[dayIdx].desc }}</p>
+                    <h2 class="text-xl font-bold text-stone-800">{{ days[dayIdx].location }}</h2>
+                    <p class="text-xs text-stone-400 mt-1 italic">{{ days[dayIdx].desc }}</p>
                 </div>
-                <i data-lucide="pencil-line" class="w-5 text-stone-300"></i>
+                <i data-lucide="map" class="w-5 text-stone-300"></i>
             </div>
 
-            <div v-for="(item, idx) in days[dayIdx].itinerary" :key="idx">
-                <div v-if="item.type === '航班'" class="bg-stone-900 text-white p-6 rounded-3xl mb-4 shadow-xl">
-                    <div class="flex justify-between items-center mb-4 text-amber-400 text-xs font-bold italic">
+            <div v-for="(item, idx) in days[dayIdx].itinerary" :key="idx" @click="startEditItinerary(idx)">
+                <div v-if="item.type === '航班'" class="bg-stone-900 text-white p-6 rounded-3xl mb-5 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="plane" class="w-20 h-20"></i></div>
+                    <div class="flex justify-between items-center mb-4 text-amber-400 text-[10px] font-bold tracking-widest">
                         <span>FLIGHT {{ item.name }}</span>
-                        <button @click="delItem('itinerary', idx)" class="text-white/30 text-lg">✕</button>
+                        <span class="bg-amber-400/20 px-2 py-0.5 rounded text-amber-200">編輯</span>
                     </div>
                     <div class="flex justify-between items-center text-center">
-                        <div class="flex-1"><div class="text-3xl font-bold">{{ item.dep || 'HKG' }}</div><div class="text-[10px] opacity-50">出發</div></div>
-                        <div class="px-4 opacity-30"><i data-lucide="plane" class="rotate-90"></i></div>
-                        <div class="flex-1"><div class="text-3xl font-bold">{{ item.arr || 'LHR' }}</div><div class="text-[10px] opacity-50">抵達</div></div>
+                        <div class="flex-1 text-left"><div class="text-2xl font-bold">{{ item.dep || 'HKG' }}</div><div class="text-[9px] opacity-40">DEP</div></div>
+                        <div class="px-2 opacity-40 flex flex-col items-center"><i data-lucide="move-right"></i></div>
+                        <div class="flex-1 text-right"><div class="text-2xl font-bold">{{ item.arr || 'LHR' }}</div><div class="text-[9px] opacity-40">ARR</div></div>
                     </div>
-                    <div class="text-center mt-4 text-xs font-mono text-stone-400">{{ item.time }}</div>
+                    <div class="mt-4 border-t border-white/10 pt-3 text-center text-xs font-mono text-stone-400">{{ item.time }}</div>
                 </div>
 
                 <div v-else class="item-card" :style="{'--type-color': getColor(item.type)}">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <div class="text-lg font-bold text-stone-800">{{ item.name }}</div>
-                            <div class="mt-2 flex gap-2">
-                                <span class="bg-stone-100 text-stone-500 px-2 py-0.5 rounded text-[10px] font-bold">{{ item.time }}</span>
-                                <span class="font-bold text-[10px]" :style="{color: getColor(item.type)}">{{ item.type }}</span>
-                            </div>
-                        </div>
-                        <button @click="delItem('itinerary', idx)" class="text-stone-300">✕</button>
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="type-badge">{{ item.type }}</span>
+                        <span class="text-[11px] font-bold text-stone-400">{{ item.time }}</span>
                     </div>
-                    <p v-if="item.note" class="mt-3 text-xs text-stone-500 border-t pt-2 whitespace-pre-line">{{ item.note }}</p>
+                    <h3 class="text-lg font-bold text-stone-800 mb-1">{{ item.name }}</h3>
+                    <p v-if="item.note" class="text-xs text-stone-500 leading-relaxed italic">{{ item.note }}</p>
+                    <div class="mt-3 flex justify-end"><i data-lucide="more-horizontal" class="w-4 text-stone-300"></i></div>
                 </div>
             </div>
         </div>
 
         <div v-show="tab === 'shopping'" class="p-6">
-            <h2 class="text-2xl font-bold mb-6 italic text-stone-700">購物清單 Wishlist</h2>
+            <h2 class="text-2xl font-bold mb-6 italic text-stone-700">購物 Wishlist</h2>
             <div class="grid grid-cols-2 gap-4">
-                <div v-for="(s, i) in shopping" :key="i" class="bg-white p-2 rounded-2xl border shadow-sm text-center">
+                <div v-for="(s, i) in shopping" :key="i" class="bg-white p-2 rounded-2xl border shadow-sm">
                     <div @click="zoomSrc = s.image" class="w-full aspect-square bg-stone-100 rounded-xl mb-2 overflow-hidden flex items-center justify-center">
                         <img v-if="s.image" :src="s.image" class="w-full h-full object-cover">
-                        <i v-else data-lucide="shopping-cart" class="text-stone-300"></i>
+                        <i v-else data-lucide="tag" class="text-stone-300"></i>
                     </div>
-                    <div class="text-xs font-bold truncate">{{ s.name }}</div>
-                    <button @click="delItem('shopping', i)" class="text-red-300 text-[10px] mt-1">刪除項目</button>
+                    <div class="text-xs font-bold truncate text-stone-700 px-1">{{ s.name }}</div>
+                    <button @click="delItem('shopping', i)" class="text-red-200 text-[10px] mt-2 block w-full">移除項目</button>
                 </div>
             </div>
         </div>
@@ -111,48 +128,48 @@
         <div v-show="tab === 'tools'" class="p-6">
             <h2 class="text-2xl font-bold mb-6 italic text-stone-700">匯率工具</h2>
             <div class="space-y-4 mb-10">
-                <div class="p-5 bg-orange-50 rounded-2xl border border-orange-100 flex items-center gap-4">
-                    <div class="bg-orange-500 text-white p-3 rounded-xl font-bold">£</div>
-                    <input type="number" v-model="gbpIn" class="flex-1 !m-0 !bg-white">
-                    <div class="font-bold text-orange-600 text-lg">≈ ${{ (gbpIn * 10.41).toFixed(1) }}</div>
+                <div class="p-4 bg-stone-50 rounded-2xl border flex items-center gap-4">
+                    <div class="w-10 h-10 bg-orange-500 text-white flex items-center justify-center rounded-full font-bold">£</div>
+                    <input type="number" v-model="gbpIn" class="flex-1 !m-0 !p-2 !bg-transparent border-b border-stone-200 rounded-none font-bold">
+                    <div class="font-bold text-stone-800">≈ ${{ (gbpIn * 10.41).toFixed(1) }}</div>
                 </div>
-                <div class="p-5 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-4">
-                    <div class="bg-blue-500 text-white p-3 rounded-xl font-bold">€</div>
-                    <input type="number" v-model="eurIn" class="flex-1 !m-0 !bg-white">
-                    <div class="font-bold text-blue-600 text-lg">≈ ${{ (eurIn * 9.06).toFixed(1) }}</div>
+                <div class="p-4 bg-stone-50 rounded-2xl border flex items-center gap-4">
+                    <div class="w-10 h-10 bg-blue-500 text-white flex items-center justify-center rounded-full font-bold">€</div>
+                    <input type="number" v-model="eurIn" class="flex-1 !m-0 !p-2 !bg-transparent border-b border-stone-200 rounded-none font-bold">
+                    <div class="font-bold text-stone-800">≈ ${{ (eurIn * 9.06).toFixed(1) }}</div>
                 </div>
             </div>
 
-            <h3 class="font-bold text-stone-400 mb-4 flex items-center gap-2"><i data-lucide="sticky-note" class="w-4"></i> 旅途備忘</h3>
+            <h3 class="font-bold text-stone-400 mb-4 flex items-center gap-2"><i data-lucide="paperclip" class="w-4"></i> 文件與備忘</h3>
             <div v-for="(m, i) in memos" :key="i" class="bg-white p-4 rounded-2xl border mb-4 shadow-sm">
-                <div class="flex justify-between mb-2">
-                    <div class="font-bold">{{ m.title }}</div>
-                    <button @click="delItem('memos', i)" class="text-red-200 text-xs">移除</button>
+                <div class="flex justify-between mb-3 border-b pb-2">
+                    <div class="font-bold text-stone-700">{{ m.title }}</div>
+                    <button @click="delItem('memos', i)" class="text-stone-300">✕</button>
                 </div>
-                <img v-if="m.image" :src="m.image" @click="zoomSrc = m.image" class="w-full h-40 object-cover rounded-xl mb-2 border">
-                <p class="text-xs text-stone-500 whitespace-pre-line">{{ m.content }}</p>
+                <img v-if="m.image" :src="m.image" @click="zoomSrc = m.image" class="w-full h-44 object-cover rounded-xl mb-3 cursor-zoom-in">
+                <p class="text-xs text-stone-500 leading-relaxed">{{ m.content }}</p>
             </div>
         </div>
 
         <div v-show="tab === 'expense'" class="p-6">
-            <h2 class="text-2xl font-bold mb-6 italic text-stone-700">開支紀錄</h2>
+            <h2 class="text-2xl font-bold mb-6 italic text-stone-700">開支明細</h2>
             <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="bg-orange-500 text-white p-5 rounded-2xl shadow-lg">
-                    <div class="text-[10px] opacity-70">英鎊 £</div>
-                    <div class="text-2xl font-bold">{{ totalGBP.toFixed(2) }}</div>
+                <div class="bg-stone-800 text-white p-5 rounded-3xl shadow-lg relative overflow-hidden">
+                    <div class="text-[9px] opacity-40 font-bold tracking-widest">GBP £</div>
+                    <div class="text-2xl font-bold mt-1">{{ totalGBP.toFixed(2) }}</div>
                 </div>
-                <div class="bg-blue-500 text-white p-5 rounded-2xl shadow-lg">
-                    <div class="text-[10px] opacity-70">歐元 €</div>
-                    <div class="text-2xl font-bold">{{ totalEUR.toFixed(2) }}</div>
+                <div class="bg-stone-100 text-stone-800 p-5 rounded-3xl border relative overflow-hidden">
+                    <div class="text-[9px] opacity-40 font-bold tracking-widest text-stone-500">EUR €</div>
+                    <div class="text-2xl font-bold mt-1">{{ totalEUR.toFixed(2) }}</div>
                 </div>
             </div>
             
-            <div v-for="(exp, i) in expenses" :key="i" @click="startEditExpense(i)" class="flex justify-between items-center p-4 bg-white border-b hover:bg-stone-50 active:bg-stone-100">
+            <div v-for="(exp, i) in expenses" :key="i" @click="startEditExpense(i)" class="flex justify-between items-center p-5 bg-white border-b active:bg-stone-50">
                 <div>
-                    <div class="font-bold text-stone-700">{{ exp.name }}</div>
-                    <div class="text-[10px] text-stone-300">點擊可修改</div>
+                    <div class="font-bold text-stone-700 text-sm">{{ exp.name }}</div>
+                    <div class="text-[10px] text-stone-300 mt-1 uppercase">{{ exp.currency }}</div>
                 </div>
-                <div class="font-bold" :class="exp.currency === 'GBP' ? 'text-orange-600' : 'text-blue-600'">
+                <div class="font-bold text-stone-800">
                     {{ exp.currency==='GBP'?'£':'€' }}{{ exp.amount }}
                 </div>
             </div>
@@ -169,44 +186,57 @@
 
     <div v-if="showModal" class="modal" @click.self="showModal = false">
         <div class="modal-body">
-            <div v-if="showModal === 'addItinerary'" class="space-y-3">
-                <h3 class="font-bold text-lg">新增行程</h3>
-                <input v-model="form.name" placeholder="活動名稱">
-                <div class="grid grid-cols-2 gap-3"><input type="time" v-model="form.time"><select v-model="form.type"><option>景點</option><option>美食</option><option>交通</option><option>住宿</option><option>航班</option></select></div>
-                <div v-if="form.type === '航班'" class="grid grid-cols-2 gap-3"><input v-model="form.dep" placeholder="起飛機場"><input v-model="form.arr" placeholder="到達機場"></div>
-                <textarea v-model="form.note" placeholder="詳細備注..."></textarea>
-                <button @click="saveData" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold mt-4">儲存行程</button>
+            <div v-if="showModal === 'addItinerary'" class="space-y-4">
+                <h3 class="font-bold text-lg text-stone-800">{{ editIdx !== null ? '修改行程' : '新增行程' }}</h3>
+                <input v-model="form.name" placeholder="景點或活動名稱">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="time" v-model="form.time">
+                    <select v-model="form.type">
+                        <option>景點</option><option>美食</option><option>交通</option><option>住宿</option><option>航班</option>
+                    </select>
+                </div>
+                <div v-if="form.type === '航班'" class="grid grid-cols-2 gap-3">
+                    <input v-model="form.dep" placeholder="出發機場碼">
+                    <input v-model="form.arr" placeholder="到達機場碼">
+                </div>
+                <textarea v-model="form.note" placeholder="詳細備注或提醒..." rows="3"></textarea>
+                <div class="flex gap-2">
+                    <button v-if="editIdx !== null" @click="delItem('itinerary', editIdx)" class="flex-1 py-4 text-red-500 font-bold bg-red-50 rounded-2xl">刪除</button>
+                    <button @click="saveData" class="flex-[2] py-4 bg-stone-800 text-white rounded-2xl font-bold">儲存項目</button>
+                </div>
             </div>
             
-            <div v-if="showModal === 'addShopping'" class="space-y-3">
-                <h3 class="font-bold text-lg">加入購物清單</h3>
-                <input v-model="form.name" placeholder="想買什麼？">
+            <div v-if="showModal === 'addShopping'" class="space-y-4">
+                <h3 class="font-bold text-lg text-stone-800">加入購物清單</h3>
+                <input v-model="form.name" placeholder="商品名稱">
                 <div class="border-2 border-dashed p-10 rounded-2xl text-center relative bg-stone-50">
                     <input type="file" @change="handleImg" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
                     <img v-if="form.image" :src="form.image" class="max-h-40 mx-auto rounded shadow">
-                    <div v-else class="text-stone-400">點擊上傳圖片</div>
+                    <div v-else class="text-stone-400 font-bold">點擊上傳參考圖片</div>
                 </div>
-                <button @click="saveData" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold mt-4">確認加入</button>
+                <button @click="saveData" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">確認加入</button>
             </div>
 
-            <div v-if="showModal === 'addMemo'" class="space-y-3">
-                <h3 class="font-bold text-lg">新增備忘</h3>
-                <input v-model="form.title" placeholder="標題">
-                <textarea v-model="form.content" placeholder="備註內容..." rows="4"></textarea>
+            <div v-if="showModal === 'addMemo'" class="space-y-4">
+                <h3 class="font-bold text-lg text-stone-800">新增文件備忘</h3>
+                <input v-model="form.title" placeholder="文件標題">
+                <textarea v-model="form.content" placeholder="內容描述..." rows="4"></textarea>
                 <div class="border-2 border-dashed p-6 rounded-2xl text-center relative bg-stone-50">
                     <input type="file" @change="handleImg" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
                     <img v-if="form.image" :src="form.image" class="max-h-32 mx-auto rounded">
-                    <div v-else class="text-stone-400">上傳圖片/文件截圖</div>
+                    <div v-else class="text-stone-400 font-bold">上傳憑證/截圖</div>
                 </div>
-                <button @click="saveData" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold mt-4">儲存備忘</button>
+                <button @click="saveData" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold">儲存備忘</button>
             </div>
 
-            <div v-if="showModal === 'addExpense'" class="space-y-3">
-                <h3 class="font-bold text-lg">{{ editIdx !== null ? '修改支出項目' : '紀錄支出' }}</h3>
+            <div v-if="showModal === 'addExpense'" class="space-y-4">
+                <h3 class="font-bold text-lg text-stone-800">{{ editIdx !== null ? '修改支出' : '紀錄支出' }}</h3>
                 <input v-model="form.name" placeholder="消費項目">
                 <div class="grid grid-cols-2 gap-3"><input type="number" v-model="form.amount" placeholder="金額"><select v-model="form.currency"><option value="GBP">英鎊 £</option><option value="EUR">歐元 €</option></select></div>
-                <button @click="saveData" class="w-full py-4 bg-stone-800 text-white rounded-2xl font-bold mt-4">儲存紀錄</button>
-                <button v-if="editIdx !== null" @click="delItem('expense', editIdx)" class="w-full py-2 text-red-500 font-bold">刪除此紀錄</button>
+                <div class="flex gap-2">
+                    <button v-if="editIdx !== null" @click="delItem('expense', editIdx)" class="flex-1 py-4 text-red-500 font-bold bg-red-50 rounded-2xl">刪除</button>
+                    <button @click="saveData" class="flex-[2] py-4 bg-stone-800 text-white rounded-2xl font-bold">儲存紀錄</button>
+                </div>
             </div>
         </div>
     </div>
@@ -256,7 +286,8 @@
                     appId: "1:134468542600:web:551d3d36f0a61c2ae07f3d"
                 });
                 db = firebase.firestore();
-                db.collection("trips").doc("v2026_STABLE_FIX").onSnapshot(doc => {
+                // 確保監聽穩定，這是裝置同步的核心
+                db.collection("trips").doc("v2026_STABLE_V2").onSnapshot(doc => {
                     if (doc.exists) {
                         const d = doc.data();
                         days.value = d.days || initialDays;
@@ -269,7 +300,7 @@
             } catch (e) { console.error(e); }
 
             const sync = () => {
-                if (db) db.collection("trips").doc("v2026_STABLE_FIX").set({
+                if (db) db.collection("trips").doc("v2026_STABLE_V2").set({
                     days: JSON.parse(JSON.stringify(days.value)),
                     shopping: JSON.parse(JSON.stringify(shopping.value)),
                     memos: JSON.parse(JSON.stringify(memos.value)),
@@ -278,7 +309,10 @@
             };
 
             const saveData = () => {
-                if(showModal.value === 'addItinerary') days.value[dayIdx.value].itinerary.push({...form.value});
+                if(showModal.value === 'addItinerary') {
+                    if(editIdx.value !== null) days.value[dayIdx.value].itinerary[editIdx.value] = {...form.value};
+                    else days.value[dayIdx.value].itinerary.push({...form.value});
+                }
                 if(showModal.value === 'addShopping') shopping.value.push({...form.value});
                 if(showModal.value === 'addMemo') memos.value.push({...form.value});
                 if(showModal.value === 'addExpense') {
@@ -323,14 +357,11 @@
                     else if(tab.value==='tools') showModal.value='addMemo';
                     else showModal.value='addExpense';
                 },
-                startEditExpense: (i) => {
-                    editIdx.value = i;
-                    form.value = {...expenses.value[i]};
-                    showModal.value = 'addExpense';
-                },
-                saveData, handleImg, delItem: (t, i) => { if(confirm("確定刪除嗎？")) { if(t==='itinerary') days.value[dayIdx.value].itinerary.splice(i,1); else if(t==='shopping') shopping.value.splice(i,1); else if(t==='memos') memos.value.splice(i,1); else if(t==='expense') expenses.value.splice(i,1); sync(); showModal.value = false; } },
+                startEditExpense: (i) => { editIdx.value = i; form.value = {...expenses.value[i]}; showModal.value = 'addExpense'; },
+                startEditItinerary: (i) => { editIdx.value = i; form.value = {...days.value[dayIdx.value].itinerary[i]}; showModal.value = 'addItinerary'; },
+                saveData, handleImg, delItem: (t, i) => { if(confirm("確定要刪除這筆資料嗎？")) { if(t==='itinerary') days.value[dayIdx.value].itinerary.splice(i,1); else if(t==='shopping') shopping.value.splice(i,1); else if(t==='memos') memos.value.splice(i,1); else if(t==='expense') expenses.value.splice(i,1); sync(); showModal.value = false; } },
                 editTitle: () => {
-                    const l = prompt("修改地點:", days.value[dayIdx.value].location);
+                    const l = prompt("修改地點名稱:", days.value[dayIdx.value].location);
                     const d = prompt("修改副標題:", days.value[dayIdx.value].desc);
                     if(l) { days.value[dayIdx.value].location=l; days.value[dayIdx.value].desc=d; sync(); }
                 },
