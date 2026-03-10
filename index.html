@@ -1,83 +1,33 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>蜜月旅行 2026 - 100% 復原版</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
-        :root { --brown: #5D5344; --bg: #FDFBF7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif, 'Noto Serif TC'; background: var(--bg); margin: 0; color: #4A4238; -webkit-tap-highlight-color: transparent; }
-        .banner-box { position: fixed; top: 0; width: 100%; height: 180px; background: #A9D5E6; z-index: 1; display: flex; justify-content: center; align-items: center; }
-        .banner-box img { width: 100%; height: 100%; object-fit: contain; }
-        .container { background: white; border-radius: 30px 30px 0 0; margin-top: 160px; position: relative; z-index: 10; min-height: 100vh; padding-bottom: 120px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
-        .sync-badge { position: fixed; top: 15px; right: 15px; z-index: 100; font-size: 11px; padding: 6px 12px; border-radius: 20px; font-weight: bold; background: white; border: 1px solid #EEE; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .item-card { background: #FCFAF5; border-radius: 16px; padding: 18px; margin-bottom: 16px; border: 1px solid #E8E2D6; position: relative; overflow: hidden; }
-        .item-card::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--type-color); }
-        .tab-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #EEE; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
-        .tab-btn { flex: 1; padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; color: #AAA; border:none; background:none; }
-        .tab-btn.active { color: var(--brown); }
-        [v-cloak] { display: none !important; }
-    </style>
-</head>
-<body>
-
-<div id="app" v-cloak>
-    <div class="sync-badge" :style="{ color: syncColor }">
-        {{ syncText }}
-    </div>
-
-    <div class="banner-box"><img src="webappbanner.webp"></div>
-    <div class="container">
-        <div v-show="tab === 'itinerary'" class="p-5">
-            <div class="flex overflow-x-auto gap-3 mb-6 no-scrollbar pb-2">
-                <div v-for="(day, i) in days" :key="i" @click="dayIdx = i" :class="['flex-shrink-0 w-16 h-20 rounded-2xl flex flex-col items-center justify-center border transition-all', dayIdx === i ? 'bg-stone-800 text-white border-stone-800' : 'bg-white text-stone-400']">
-                    <span class="text-[9px] font-bold uppercase mb-1">{{ day.weekday }}</span>
-                    <span class="text-sm font-bold">{{ day.dateNum }}</span>
-                </div>
-            </div>
-
-            <div class="mb-6 p-4 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200">
-                <h2 class="text-xl font-bold text-stone-800">{{ days[dayIdx]?.location || '載入中...' }}</h2>
-                <p class="text-xs text-stone-400 mt-1 italic">{{ days[dayIdx]?.desc }}</p>
-            </div>
-
-            <div v-if="sortedItinerary.length === 0" class="text-center py-10 text-stone-300 italic text-sm">
-                這一天暫時沒有安排行程
-            </div>
-            <div v-for="(item, idx) in sortedItinerary" :key="idx" class="item-card" :style="{'--type-color': getColor(item.type)}">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-stone-200">{{ item.type }}</span>
-                    <span class="text-[11px] font-bold text-stone-400">{{ item.time }}</span>
-                </div>
-                <h3 class="text-lg font-bold text-stone-800 mb-1">{{ item.name }}</h3>
-                <p v-if="item.note" class="text-xs text-stone-500">{{ item.note }}</p>
-            </div>
-        </div>
-    </div>
-
-    <nav class="tab-nav">
-        <button v-for="t in tabs" @click="tab = t.id" :class="['tab-btn', tab === t.id ? 'active' : '']">
-            <i :data-lucide="t.icon" class="w-5"></i><span>{{ t.name }}</span>
-        </button>
-    </nav>
-</div>
-
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
 <script>
-    const { createApp, ref, computed, nextTick } = Vue;
+    const { createApp, ref, computed, watch, nextTick } = Vue;
+    
+    // 這是初始值，僅作為雲端斷線時的墊底
+    const initialDays = [
+        { weekday: '週二', dateNum: '3月10', location: '抵達倫敦', desc: '辦理入住與休息', itinerary: [{type:'航班',name:'CX239',time:'10:40',dep:'HKG',arr:'LHR',note:''}] },
+        { weekday: '週三', dateNum: '3月11', location: '牛津/Bicester', desc: '購物與逛街', itinerary: [] },
+        { weekday: '週四', dateNum: '3月12', location: '倫敦市區', desc: '著名地標巡禮', itinerary: [] },
+        { weekday: '週五', dateNum: '3月13', location: '波羅市場', desc: '美食之旅', itinerary: [] },
+        { weekday: '週六', dateNum: '3月14', location: '球賽日', desc: '現場球賽體驗', itinerary: [] },
+        { weekday: '週日', dateNum: '3月15', location: '跨國移動', desc: '前往阿姆斯特丹', itinerary: [{type:'航班',name:'BA440',time:'14:10',dep:'LHR',arr:'AMS',note:''}] },
+        { weekday: '週一', dateNum: '3月16', location: '阿姆斯特丹', desc: '運河巡禮', itinerary: [] },
+        { weekday: '週二', dateNum: '3月17', location: '布魯塞爾', desc: '一日城市遊', itinerary: [] },
+        { weekday: '週三', dateNum: '3月18', location: '鹿特丹', desc: '現代建築遊覽', itinerary: [] },
+        { weekday: '週四', dateNum: '3月19', location: '啟程回港', desc: '旅程完美結束', itinerary: [{type:'航班',name:'CX270',time:'12:30',dep:'AMS',arr:'HKG',note:''}] }
+    ];
 
     createApp({
         setup() {
             const tab = ref('itinerary');
             const dayIdx = ref(0);
-            const days = ref(Array(10).fill({weekday:'', dateNum:'', location:'', desc:'', itinerary:[]}));
-            const syncStatus = ref('loading');
+            const days = ref(initialDays);
+            const shopping = ref([]);
+            const memos = ref([]);
+            const expenses = ref([]);
+            const showModal = ref(false);
+            const zoomSrc = ref(null);
+            const editIdx = ref(null);
+            const form = ref({});
+            const syncStatus = ref('⌛ 連線中...');
 
             let db;
             try {
@@ -88,51 +38,48 @@
                     appId: "1:134468542600:web:551d3d36f0a61c2ae07f3d"
                 });
                 db = firebase.firestore();
-
-                // 【核心復原邏輯】精準讀取 IMG_7383.jpg 顯示的那個 ID
-                db.collection("trips").doc("v2026_FINAL_STABLE").onSnapshot({ includeMetadataChanges: true }, (doc) => {
+                
+                // 【核心修正】讀取截圖中確定的 Document ID: final_v2026
+                db.collection("trips").doc("final_v2026").onSnapshot({ includeMetadataChanges: true }, (doc) => {
                     if (doc.exists) {
-                        const data = doc.data();
-                        if (data.days) {
-                            days.value = data.days;
-                            syncStatus.value = doc.metadata.hasPendingWrites ? 'syncing' : 'synced';
-                        }
+                        const d = doc.data();
+                        // 只有雲端有資料時才覆蓋，確保 100% 還原
+                        if (d.days) days.value = d.days;
+                        if (d.shopping) shopping.value = d.shopping;
+                        if (d.memos) memos.value = d.memos;
+                        if (d.expenses) expenses.value = d.expenses;
+                        
+                        // 同步狀態判斷
+                        syncStatus.value = doc.metadata.hasPendingWrites ? "☁️ 同步中..." : "✅ 雲端已對接";
                     } else {
-                        syncStatus.value = 'notfound';
+                        syncStatus.value = "❓ 雲端無此路徑";
                     }
                     nextTick(() => lucide.createIcons());
-                }, (error) => {
-                    console.error("讀取失敗:", error);
-                    syncStatus.value = 'error';
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e);
+                syncStatus.value = "❌ 連線錯誤";
+            }
 
-            const syncText = computed(() => {
-                const map = {
-                    'loading': '⌛ 正在連線雲端...',
-                    'syncing': '☁️ 正在同步資料...',
-                    'synced': '✅ 100% 雲端同步中',
-                    'notfound': '❌ 找不到資料夾',
-                    'error': '⚠️ 連線錯誤'
-                };
-                return map[syncStatus.value];
-            });
+            const sync = () => {
+                if (db) {
+                    syncStatus.value = "☁️ 同步中...";
+                    db.collection("trips").doc("final_v2026").set({
+                        days: JSON.parse(JSON.stringify(days.value)),
+                        shopping: JSON.parse(JSON.stringify(shopping.value)),
+                        memos: JSON.parse(JSON.stringify(memos.value)),
+                        expenses: JSON.parse(JSON.stringify(expenses.value)),
+                        lastUpdate: new Date().toISOString()
+                    }, { merge: true });
+                }
+            };
 
-            const syncColor = computed(() => {
-                return { 'loading':'#999', 'syncing':'#FF9F00', 'synced':'#28C76F', 'notfound':'#EA5455', 'error':'#EA5455' }[syncStatus.value];
-            });
-
-            const sortedItinerary = computed(() => {
-                return days.value[dayIdx.value]?.itinerary || [];
-            });
-
+            // ... 其餘函數 (saveData, handleImg, totalGBP 等) 保持不變 ...
+            
             return {
-                tab, dayIdx, days, syncText, syncColor, sortedItinerary,
-                getColor: (t) => ({'景點':'#5D5344','美食':'#C19A6B','交通':'#4A90E2','住宿':'#A389D4','航班':'#2c2c2c'}[t] || '#EEE'),
-                tabs: [{id:'itinerary',name:'行程',icon:'map-pinned'},{id:'shopping',name:'購物',icon:'shopping-bag'},{id:'tools',name:'工具',icon:'wrench'},{id:'expense',name:'花費',icon:'banknote'}]
+                tab, dayIdx, days, shopping, memos, expenses, showModal, zoomSrc, editIdx, form, syncStatus,
+                // ... 記得把你的其他 return 項目也放回來 ...
             }
         }
     }).mount('#app');
 </script>
-</body>
-</html>
