@@ -57,7 +57,6 @@
 
 <div id="app" v-cloak>
     <div class="banner-box"><img src="webappbanner.webp"></div>
-
     <div v-if="zoomSrc" class="img-zoom-view" @click="zoomSrc = null"><img :src="zoomSrc"></div>
 
     <div class="container">
@@ -77,9 +76,7 @@
                     </div>
                     <i data-lucide="map" class="w-5 text-stone-300"></i>
                 </div>
-                
-                <a :href="'https://www.google.com/search?q=' + encodeURIComponent(days[dayIdx].location + ' weather')" 
-                   target="_blank" class="weather-widget">
+                <a :href="'https://www.google.com/search?q=' + encodeURIComponent(days[dayIdx].location + ' weather')" target="_blank" class="weather-widget">
                     <i data-lucide="cloud-sun" class="w-5 text-stone-400"></i>
                     <div class="flex-1">
                         <div class="text-[10px] font-bold uppercase tracking-tighter">Live Weather</div>
@@ -297,12 +294,10 @@
                 });
                 
                 db = firebase.firestore();
-                
-                // [方案A 修改處] 啟動離線緩存，即使沒網路也能看
                 db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
 
-                // [方案A 修改處] 強化監聽邏輯，增加錯誤提示
-                db.collection("trips").doc("v2026_FINAL_STABLE").onSnapshot({
+                // 修正 Document ID 為 final_v2026
+                db.collection("trips").doc("final_v2026").onSnapshot({
                     includeMetadataChanges: true 
                 }, doc => {
                     if (doc.exists) {
@@ -314,14 +309,9 @@
                     }
                     nextTick(() => lucide.createIcons());
                 }, err => {
-                    console.error("Firestore 連線失敗:", err);
-                    // 只有在真的連不到時才提醒，不影響頁面操作
-                    if(!window.offlineAlertDone) {
-                        alert("網路連線不穩定，正切換至離線模式。");
-                        window.offlineAlertDone = true;
-                    }
+                    console.error("Firestore Error:", err);
                 });
-            } catch (e) { console.error("Firebase 初始化錯誤:", e); }
+            } catch (e) { console.error("Init Error:", e); }
 
             const sortedItinerary = computed(() => {
                 const currentDay = days.value[dayIdx.value];
@@ -332,7 +322,8 @@
             });
 
             const sync = () => {
-                if (db) db.collection("trips").doc("v2026_FINAL_STABLE").set({
+                // 修正 Document ID 為 final_v2026
+                if (db) db.collection("trips").doc("final_v2026").set({
                     days: JSON.parse(JSON.stringify(days.value)),
                     shopping: JSON.parse(JSON.stringify(shopping.value)),
                     memos: JSON.parse(JSON.stringify(memos.value)),
