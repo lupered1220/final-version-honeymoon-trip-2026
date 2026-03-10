@@ -295,8 +295,16 @@
                     projectId: "honeymoon-2026-603b1",
                     appId: "1:134468542600:web:551d3d36f0a61c2ae07f3d"
                 });
+                
                 db = firebase.firestore();
-                db.collection("trips").doc("v2026_FINAL_STABLE").onSnapshot(doc => {
+                
+                // [方案A 修改處] 啟動離線緩存，即使沒網路也能看
+                db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+
+                // [方案A 修改處] 強化監聽邏輯，增加錯誤提示
+                db.collection("trips").doc("v2026_FINAL_STABLE").onSnapshot({
+                    includeMetadataChanges: true 
+                }, doc => {
                     if (doc.exists) {
                         const d = doc.data();
                         days.value = d.days || initialDays;
@@ -305,19 +313,22 @@
                         expenses.value = d.expenses || [];
                     }
                     nextTick(() => lucide.createIcons());
+                }, err => {
+                    console.error("Firestore 連線失敗:", err);
+                    // 只有在真的連不到時才提醒，不影響頁面操作
+                    if(!window.offlineAlertDone) {
+                        alert("網路連線不穩定，正切換至離線模式。");
+                        window.offlineAlertDone = true;
+                    }
                 });
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Firebase 初始化錯誤:", e); }
 
-            // 自動按時間排序的 Computed 屬性
             const sortedItinerary = computed(() => {
                 const currentDay = days.value[dayIdx.value];
                 if (!currentDay || !currentDay.itinerary) return [];
-                
                 return currentDay.itinerary
                     .map((item, index) => ({ ...item, originalIdx: index }))
-                    .sort((a, b) => {
-                        return a.time.localeCompare(b.time);
-                    });
+                    .sort((a, b) => a.time.localeCompare(b.time));
             });
 
             const sync = () => {
