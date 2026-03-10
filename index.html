@@ -3,83 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>行程救援系統 - 2026</title>
+    <title>蜜月旅行 2026 - 完整功能恢復</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
-        body { font-family: -apple-system, sans-serif, 'Noto Serif TC'; background: #FDFBF7; color: #4A4238; }
-        .container { background: white; border-radius: 30px 30px 0 0; margin-top: 100px; position: relative; min-height: 100vh; padding: 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); }
-        .item-card { background: #FCFAF5; border-radius: 16px; padding: 18px; margin-bottom: 12px; border: 1px solid #E8E2D6; border-left: 6px solid #5D5344; }
-        .tab-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; padding: 10px 0; border-top: 1px solid #EEE; z-index: 100; }
-        .debug-panel { background: #333; color: white; padding: 10px; font-size: 10px; position: fixed; top: 0; width: 100%; z-index: 200; overflow-x: auto; white-space: nowrap; }
-        .debug-btn { background: #555; padding: 4px 8px; border-radius: 4px; margin-right: 5px; border: 1px solid #777; }
-        .debug-btn.active { background: #28C76F; border-color: white; }
+        :root { --brown: #5D5344; --bg: #FDFBF7; }
+        body { font-family: -apple-system, sans-serif, 'Noto Serif TC'; background: var(--bg); color: #4A4238; margin:0; }
+        .container { background: white; border-radius: 30px 30px 0 0; margin-top: 140px; position: relative; min-height: 100vh; padding-bottom: 100px; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); }
+        .tab-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #EEE; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+        .tab-btn { flex: 1; padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: #AAA; border:none; background:none; }
+        .tab-btn.active { color: var(--brown); font-weight: bold; }
+        .item-card { background: #FCFAF5; border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid #E8E2D6; }
+        .sync-badge { position: fixed; top: 15px; right: 15px; z-index: 200; font-size: 11px; padding: 6px 12px; border-radius: 20px; background: white; border: 1px solid #EEE; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .banner { position: fixed; top: 0; width: 100%; height: 160px; background: #A9D5E6; z-index: 1; }
+        .banner img { width:100%; height:100%; object-fit: cover; }
+        [v-cloak] { display: none !important; }
     </style>
 </head>
 <body>
 
 <div id="app" v-cloak>
-    <div class="debug-panel">
-        <span class="mr-2">切換版本：</span>
-        <button v-for="id in docList" @click="switchDoc(id)" :class="['debug-btn', currentDoc === id ? 'active' : '']">
-            {{ id }}
-        </button>
-    </div>
+    <div class="sync-badge" :style="{ color: syncColor }">{{ syncStatus }}</div>
+    <div class="banner"><img src="webappbanner.webp"></div>
 
-    <div class="container">
-        <div class="mb-4 flex justify-between items-end">
-            <div>
-                <h1 class="text-2xl font-bold">行程救援</h1>
-                <p class="text-xs text-stone-400">目前位置: {{ currentDoc }}</p>
+    <div class="container p-5">
+        <div v-show="tab === 'itinerary'">
+            <div class="flex overflow-x-auto gap-3 mb-6 no-scrollbar">
+                <div v-for="(day, i) in days" @click="dayIdx = i" :class="['flex-shrink-0 w-16 h-20 rounded-2xl flex flex-col items-center justify-center border', dayIdx === i ? 'bg-stone-800 text-white' : 'bg-white text-stone-400']">
+                    <span class="text-[9px] uppercase">{{ day.weekday }}</span>
+                    <span class="text-sm font-bold">{{ day.dateNum }}</span>
+                </div>
             </div>
-            <div class="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">{{ syncStatus }}</div>
-        </div>
-
-        <div class="flex overflow-x-auto gap-2 mb-6 no-scrollbar">
-            <div v-for="(day, i) in days" @click="dayIdx = i" :class="['flex-shrink-0 px-4 py-2 rounded-xl border text-center transition-all', dayIdx === i ? 'bg-stone-800 text-white' : 'bg-white']">
-                <div class="text-[9px] uppercase">{{ day.weekday }}</div>
-                <div class="text-sm font-bold">{{ day.dateNum }}</div>
+            <div class="mb-6 p-4 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200">
+                <h2 class="text-xl font-bold">{{ days[dayIdx]?.location }}</h2>
+                <p class="text-xs text-stone-400 italic">{{ days[dayIdx]?.desc }}</p>
             </div>
-        </div>
-
-        <div v-if="sortedItinerary.length > 0">
             <div v-for="item in sortedItinerary" class="item-card">
-                <div class="flex justify-between text-[11px] text-stone-400 mb-1">
-                    <span>{{ item.type }}</span>
+                <div class="flex justify-between text-[10px] text-stone-400 mb-1">
+                    <span class="font-bold px-2 py-0.5 rounded bg-stone-100 text-stone-600">{{ item.type }}</span>
                     <span>{{ item.time }}</span>
                 </div>
-                <div class="font-bold text-lg">{{ item.name }}</div>
-                <div v-if="item.note" class="text-sm text-stone-500 mt-1">{{ item.note }}</div>
+                <h3 class="text-lg font-bold">{{ item.name }}</h3>
+                <p v-if="item.note" class="text-sm text-stone-500 mt-1">{{ item.note }}</p>
             </div>
         </div>
-        <div v-else class="text-center py-20 text-stone-300 italic">
-            這個版本下此日期沒有行程<br>請點擊上方黑色列切換其他版本
+
+        <div v-show="tab === 'shopping'">
+            <h2 class="text-2xl font-bold mb-6 italic">Wishlist & Memos</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div v-for="s in shopping" class="bg-white p-2 rounded-2xl border">
+                    <div class="aspect-square bg-stone-100 rounded-xl mb-2 overflow-hidden">
+                        <img v-if="s.image" :src="s.image" class="w-full h-full object-cover">
+                        <div v-else class="w-full h-full flex items-center justify-center text-stone-300">No Image</div>
+                    </div>
+                    <div class="text-xs font-bold px-1 truncate">{{ s.name }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div v-show="tab === 'tools'">
+            <h2 class="text-2xl font-bold mb-6 italic">Travel Tools</h2>
+            <div class="space-y-6">
+                <div class="p-6 bg-stone-800 rounded-3xl text-white">
+                    <div class="text-xs opacity-50 mb-1">英鎊換算 (匯率 10.4)</div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-2xl">£</span>
+                        <input type="number" v-model="gbpIn" class="bg-transparent text-2xl font-bold outline-none border-none w-full text-white">
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-white/10 text-xl font-bold">≈ HK$ {{ (gbpIn * 10.4).toFixed(1) }}</div>
+                </div>
+                <div class="p-6 bg-stone-700 rounded-3xl text-white">
+                    <div class="text-xs opacity-50 mb-1">歐元換算 (匯率 8.6)</div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-2xl">€</span>
+                        <input type="number" v-model="eurIn" class="bg-transparent text-2xl font-bold outline-none border-none w-full text-white">
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-white/10 text-xl font-bold">≈ HK$ {{ (eurIn * 8.6).toFixed(1) }}</div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <nav class="tab-nav shadow-lg">
+        <button v-for="t in tabs" @click="tab = t.id" :class="['tab-btn', tab === t.id ? 'active' : '']">
+            <i :data-lucide="t.icon" class="w-5"></i><span>{{ t.name }}</span>
+        </button>
+    </nav>
 </div>
 
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
-    const { createApp, ref, computed } = Vue;
+    const { createApp, ref, computed, nextTick, watch } = Vue;
     const initialDays = [
-        { weekday: '週二', dateNum: '3/10', itinerary: [] }, { weekday: '週三', dateNum: '3/11', itinerary: [] },
-        { weekday: '週四', dateNum: '3/12', itinerary: [] }, { weekday: '週五', dateNum: '3/13', itinerary: [] },
-        { weekday: '週六', dateNum: '3/14', itinerary: [] }, { weekday: '週日', dateNum: '3/15', itinerary: [] },
-        { weekday: '週一', dateNum: '3/16', itinerary: [] }, { weekday: '週二', dateNum: '3/17', itinerary: [] },
-        { weekday: '週三', dateNum: '3/18', itinerary: [] }, { weekday: '週四', dateNum: '3/19', itinerary: [] }
+        { weekday: '週二', dateNum: '3/10', location: '抵達倫敦', desc: '辦理入住與休息', itinerary: [] },
+        { weekday: '週三', dateNum: '3/11', location: '牛津/Bicester', desc: '購物與逛街', itinerary: [] },
+        { weekday: '週四', dateNum: '3/12', location: '倫敦市區', desc: '著名地標巡禮', itinerary: [] },
+        { weekday: '週五', dateNum: '3/13', location: '波羅市場', desc: '美食之旅', itinerary: [] },
+        { weekday: '週六', dateNum: '3/14', location: '球賽日', desc: '現場球賽體驗', itinerary: [] },
+        { weekday: '週日', dateNum: '3/15', location: '跨國移動', desc: '前往阿姆斯特丹', itinerary: [] },
+        { weekday: '週一', dateNum: '3/16', location: '阿姆斯特丹', desc: '運河巡禮', itinerary: [] },
+        { weekday: '週二', dateNum: '3/17', location: '布魯塞爾', desc: '一日城市遊', itinerary: [] },
+        { weekday: '週三', dateNum: '3/18', location: '鹿特丹', desc: '現代建築遊覽', itinerary: [] },
+        { weekday: '週四', dateNum: '3/19', location: '啟程回港', desc: '旅程完美結束', itinerary: [] }
     ];
 
     createApp({
         setup() {
-            const days = ref(initialDays);
+            const tab = ref('itinerary');
             const dayIdx = ref(0);
-            const currentDoc = ref('final_v2026');
-            const syncStatus = ref('連接中...');
-            const docList = ['final_v2026', 'v2026_final_stable', 'v2026_FINAL_STABLE'];
-            
+            const days = ref(initialDays);
+            const shopping = ref([]);
+            const gbpIn = ref(100);
+            const eurIn = ref(100);
+            const syncStatus = ref('⏳ 讀取中...');
+            const syncColor = ref('#FF9F00');
+
             let db;
             try {
                 firebase.initializeApp({
@@ -89,29 +131,38 @@
                     appId: "1:134468542600:web:551d3d36f0a61c2ae07f3d"
                 });
                 db = firebase.firestore();
-                loadData(currentDoc.value);
-            } catch (e) { syncStatus.value = "連線失敗"; }
 
-            function loadData(id) {
-                syncStatus.value = "讀取中...";
-                db.collection("trips").doc(id).get().then(doc => {
-                    if (doc.exists && doc.data().days) {
-                        days.value = doc.data().days;
-                        syncStatus.value = "讀取成功";
-                    } else {
-                        syncStatus.value = "此版無資料";
-                        days.value = initialDays;
-                    }
+                // 核心修復：這段邏輯會掃描所有可能的門牌號碼，哪裡有資料就抓哪裡
+                const rooms = ["v2026_final_stable", "final_v2026", "v2026_FINAL_STABLE"];
+                rooms.forEach(rid => {
+                    db.collection("trips").doc(rid).onSnapshot(doc => {
+                        if (doc.exists) {
+                            const d = doc.data();
+                            // 如果這個房間有資料（不管是行程還是購物照片），就顯示出來
+                            if (d.days && d.days.some(day => day.itinerary.length > 0)) {
+                                days.value = d.days;
+                                syncStatus.value = "✅ 行程已恢復";
+                                syncColor.value = "#28C76F";
+                            }
+                            if (d.shopping && d.shopping.length > 0) {
+                                shopping.value = d.shopping;
+                                syncStatus.value = "✅ 照片/工具已恢復";
+                            }
+                        }
+                    });
                 });
-            }
+            } catch (e) { syncStatus.value = "❌ 連線失敗"; }
 
             const sortedItinerary = computed(() => {
-                return (days.value[dayIdx.value]?.itinerary || []).sort((a,b) => a.time.localeCompare(b.time));
+                const day = days.value[dayIdx.value];
+                return (day?.itinerary || []).sort((a,b) => a.time.localeCompare(b.time));
             });
 
+            watch([tab, dayIdx], () => nextTick(() => lucide.createIcons()));
+
             return {
-                days, dayIdx, currentDoc, syncStatus, docList, sortedItinerary,
-                switchDoc: (id) => { currentDoc.value = id; loadData(id); }
+                tab, dayIdx, days, shopping, gbpIn, eurIn, syncStatus, syncColor, sortedItinerary,
+                tabs: [{id:'itinerary',name:'行程',icon:'map-pinned'},{id:'shopping',name:'備忘照片',icon:'camera'},{id:'tools',name:'匯率工具',icon:'calculator'}]
             }
         }
     }).mount('#app');
