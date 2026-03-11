@@ -12,10 +12,7 @@
         .banner-box { position: fixed; top: 0; width: 100%; height: 180px; background: #A9D5E6; z-index: 1; display: flex; justify-content: center; align-items: center; }
         .banner-box img { width: 100%; height: 100%; object-fit: contain; }
         .container { background: white; border-radius: 30px 30px 0 0; margin-top: 160px; position: relative; z-index: 10; min-height: 100vh; padding-bottom: 120px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
-        
-        /* 優化後的同步燈號：移至左上角且半透明 */
-        .sync-badge { position: fixed; top: 12px; left: 12px; z-index: 100; font-size: 10px; padding: 4px 10px; border-radius: 20px; font-weight: bold; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 4px; pointer-events: none; }
-        
+        .sync-badge { position: fixed; top: 12px; left: 12px; z-index: 100; font-size: 10px; padding: 4px 10px; border-radius: 20px; font-weight: bold; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; gap: 4px; pointer-events: none; }
         .dot { width: 6px; height: 6px; border-radius: 50%; }
         .item-card { background: #FCFAF5; border-radius: 16px; padding: 18px; margin-bottom: 16px; border: 1px solid #E8E2D6; position: relative; overflow: hidden; }
         .item-card::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--type-color); }
@@ -61,13 +58,25 @@
 
             <div v-for="(item, idx) in sortedItinerary" :key="idx">
                 <div v-if="item.type === '航班'" @click="startEditItinerary(item.originalIdx)" class="bg-stone-900 text-white p-6 rounded-3xl mb-5 shadow-xl relative overflow-hidden">
-                    <div class="flex justify-between items-center mb-4 text-amber-400 text-[10px] font-bold"><span>FLIGHT {{ item.name }}</span><span class="bg-amber-400/20 px-2 py-0.5 rounded">編輯</span></div>
-                    <div class="flex justify-between items-center text-center">
-                        <div class="flex-1 text-left"><div class="text-2xl font-bold">{{ item.dep }}</div><div class="text-[9px] opacity-40">DEP</div></div>
-                        <div class="px-2 opacity-40"><i data-lucide="move-right"></i></div>
-                        <div class="flex-1 text-right"><div class="text-2xl font-bold">{{ item.arr }}</div><div class="text-[9px] opacity-40">ARR</div></div>
+                    <div class="flex justify-between items-center mb-4 text-amber-400 text-[10px] font-bold">
+                        <span>FLIGHT {{ item.name }}</span>
+                        <i data-lucide="plane" class="w-3"></i>
                     </div>
-                    <div class="mt-4 border-t border-white/10 pt-3 text-center text-xs font-mono text-stone-400">{{ item.time }}</div>
+                    <div class="flex justify-between items-center text-center">
+                        <div class="flex-1 text-left">
+                            <div class="text-2xl font-bold">{{ item.dep }}</div>
+                            <div class="text-lg font-mono text-amber-400">{{ item.depTime || '--:--' }}</div>
+                            <div class="text-[9px] opacity-40">DEPARTURE</div>
+                        </div>
+                        <div class="px-2 opacity-40 flex flex-col items-center">
+                            <i data-lucide="move-right"></i>
+                        </div>
+                        <div class="flex-1 text-right">
+                            <div class="text-2xl font-bold">{{ item.arr }}</div>
+                            <div class="text-lg font-mono text-amber-400">{{ item.arrTime || '--:--' }}</div>
+                            <div class="text-[9px] opacity-40">ARRIVAL</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div v-else class="item-card" :style="{'--type-color': getColor(item.type)}">
@@ -149,9 +158,20 @@
         <div class="modal-body space-y-4">
             <h3 class="font-bold text-lg">新增/編輯</h3>
             <template v-if="showModal === 'addItinerary'">
-                <input v-model="form.name" placeholder="名稱">
-                <div class="grid grid-cols-2 gap-3"><input type="time" v-model="form.time"><select v-model="form.type"><option>景點</option><option>美食</option><option>購物</option><option>交通</option><option>住宿</option><option>航班</option></select></div>
-                <div v-if="form.type === '航班'" class="grid grid-cols-2 gap-3"><input v-model="form.dep" placeholder="從"><input v-model="form.arr" placeholder="到"></div>
+                <input v-model="form.name" placeholder="名稱 (如: CX239)">
+                <select v-model="form.type"><option>景點</option><option>美食</option><option>購物</option><option>交通</option><option>住宿</option><option>航班</option></select>
+                
+                <template v-if="form.type === '航班'">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="text-[10px] font-bold text-stone-400 ml-1">出發時間</label><input type="time" v-model="form.depTime"></div>
+                        <div><label class="text-[10px] font-bold text-stone-400 ml-1">抵達時間</label><input type="time" v-model="form.arrTime"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3"><input v-model="form.dep" placeholder="從 (如: HKG)"><input v-model="form.arr" placeholder="到 (如: LHR)"></div>
+                </template>
+                <template v-else>
+                    <input type="time" v-model="form.time">
+                </template>
+                
                 <textarea v-model="form.note" placeholder="備注..."></textarea>
             </template>
             <template v-if="showModal === 'addShopping'"><input v-model="form.name" placeholder="商品名稱"><input type="file" @change="handleImg" accept="image/*"><img v-if="form.image" :src="form.image" class="max-h-32 mx-auto mt-2 rounded"></template>
@@ -170,16 +190,8 @@
 <script>
     const { createApp, ref, computed, watch, nextTick } = Vue;
     const initialDays = [
-        { weekday: '週二', dateNum: '3月10', location: '抵達倫敦', desc: '辦理入住與休息', itinerary: [{type:'航班',name:'CX239',time:'10:40',dep:'HKG',arr:'LHR',note:''}] },
-        { weekday: '週三', dateNum: '3月11', location: '牛津/Bicester', desc: '購物與西敏寺', itinerary: [{type:'美食',name:'The Black Penny',time:'08:30',note:'早餐'},{type:'景點',name:'Westminster Abbey',time:'10:30',note:'預約參觀'},{type:'購物',name:'Bicester Village',time:'13:00',note:'搭火車'}] },
-        { weekday: '週四', dateNum: '3月12', location: '倫敦與購物', desc: '東倫敦潮流與Outlet', itinerary: [{type:'美食',name:'Ozone Coffee Roasters',time:'09:00',note:'Shoreditch 早餐'},{type:'美食',name:'Flat Iron',time:'11:30',note:'11:30 掃碼報位'},{type:'購物',name:'Bicester Village',time:'14:00',note:'購物補貨'}] },
-        { weekday: '週五', dateNum: '3月13', location: '波羅市場', desc: '美食之旅', itinerary: [] },
-        { weekday: '週六', dateNum: '3月14', location: '球賽日', desc: '現場球賽體驗', itinerary: [] },
-        { weekday: '週日', dateNum: '3月15', location: '跨國移動', desc: '前往阿姆斯特丹', itinerary: [] },
-        { weekday: '週一', dateNum: '3月16', location: '阿姆斯特丹', desc: '運河巡禮', itinerary: [] },
-        { weekday: '週二', dateNum: '3月17', location: '布魯塞爾', desc: '一日城市遊', itinerary: [] },
-        { weekday: '週三', dateNum: '3月18', location: '鹿特丹', desc: '現代建築遊覽', itinerary: [] },
-        { weekday: '週四', dateNum: '3月19', location: '啟程回港', desc: '旅程完美結束', itinerary: [] }
+        { weekday: '週二', dateNum: '3月10', location: '抵達倫敦', desc: '辦理入住與休息', itinerary: [{type:'航班',name:'CX239',depTime:'10:40',arrTime:'17:50',dep:'HKG',arr:'LHR',note:''}] },
+        { weekday: '週三', dateNum: '3月11', location: '牛津/Bicester', desc: '購物與西敏寺', itinerary: [{type:'美食',name:'The Black Penny',time:'08:30',note:'早餐'},{type:'景點',name:'Westminster Abbey',time:'10:30',note:'預約參觀'}] }
     ];
 
     createApp({
@@ -232,10 +244,18 @@
                 tab, dayIdx, days, shopping, memos, expenses, showModal, zoomSrc, editIdx, form, gbpIn, eurIn, syncInfo,
                 totalGBP: computed(() => expenses.value.filter(e=>e.currency==='GBP').reduce((a,b)=>a+(Number(b.amount)||0), 0)),
                 totalEUR: computed(() => expenses.value.filter(e=>e.currency==='EUR').reduce((a,b)=>a+(Number(b.amount)||0), 0)),
-                sortedItinerary: computed(() => (days.value[dayIdx.value]?.itinerary || []).map((item, index) => ({ ...item, originalIdx: index })).sort((a, b) => a.time.localeCompare(b.time))),
+                sortedItinerary: computed(() => {
+                    const list = (days.value[dayIdx.value]?.itinerary || []).map((item, index) => ({ ...item, originalIdx: index }));
+                    return list.sort((a, b) => {
+                        const timeA = a.type === '航班' ? (a.depTime || '00:00') : (a.time || '00:00');
+                        const timeB = b.type === '航班' ? (b.depTime || '00:00') : (b.time || '00:00');
+                        return timeA.localeCompare(timeB);
+                    });
+                }),
                 tabs: [{id:'itinerary',name:'行程',icon:'map-pinned'},{id:'shopping',name:'購物',icon:'shopping-bag'},{id:'tools',name:'工具',icon:'wrench'},{id:'expense',name:'花費',icon:'banknote'}],
                 openAddModal: () => {
-                    editIdx.value = null; form.value = {name:'',time:'12:00',type:'景點',note:'',dep:'HKG',arr:'LHR',currency:'GBP',image:null};
+                    editIdx.value = null; 
+                    form.value = {name:'',time:'12:00',depTime:'12:00',arrTime:'14:00',type:'景點',note:'',dep:'HKG',arr:'LHR',currency:'GBP',image:null};
                     if(tab.value==='itinerary') showModal.value='addItinerary';
                     else if(tab.value==='shopping') showModal.value='addShopping';
                     else if(tab.value==='tools') showModal.value='addMemo';
