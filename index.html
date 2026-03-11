@@ -49,14 +49,16 @@
                 </div>
             </div>
 
-            <div class="mb-6 p-4 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200" @click="editTitle">
-                <h2 class="text-xl font-bold text-stone-800">{{ days[dayIdx].location }}</h2>
-                <p class="text-xs text-stone-400 mt-1 italic">{{ days[dayIdx].desc }}</p>
+            <div class="mb-6 p-4 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200">
+                <h2 class="text-xl font-bold text-stone-800" @click="editTitle">{{ days[dayIdx].location }}</h2>
+                <p class="text-xs text-stone-400 mt-1 italic flex items-center gap-1" @click="editSubTitle">
+                    <i data-lucide="pencil" class="w-3"></i> {{ days[dayIdx].desc || '點擊新增副標題...' }}
+                </p>
             </div>
 
             <div v-for="(item, idx) in sortedItinerary" :key="idx">
                 <div v-if="item.type === '航班'" @click="startEditItinerary(item.originalIdx)" class="bg-stone-900 text-white p-6 rounded-3xl mb-5 shadow-xl relative overflow-hidden">
-                    <div class="flex justify-between items-center mb-4 text-amber-400 text-[10px] font-bold">
+                    <div class="flex justify-between items-center mb-4 text-amber-400 text-[10px] font-bold uppercase">
                         <span>FLIGHT {{ item.name }}</span>
                         <span class="bg-amber-400/20 px-2 py-0.5 rounded">編輯</span>
                     </div>
@@ -95,7 +97,7 @@
                         <i v-else data-lucide="tag" class="text-stone-300"></i>
                     </div>
                     <div class="text-xs font-bold truncate px-1">{{ s.name }}</div>
-                    <button @click.stop="delItem('shopping', i)" class="text-red-300 text-[9px] mt-2 w-full">移除</button>
+                    <button @click.stop="delItem('shopping', i)" class="text-red-300 text-[9px] mt-2 w-full">移除項目</button>
                 </div>
             </div>
         </div>
@@ -106,12 +108,12 @@
                 <div class="p-4 bg-orange-500 text-white rounded-2xl flex items-center gap-4 shadow-md">
                     <div class="w-10 h-10 bg-white/20 flex items-center justify-center rounded-full font-bold">£</div>
                     <input type="number" v-model="gbpIn" class="flex-1 bg-transparent border-b border-white/30 font-bold text-white outline-none text-xl">
-                    <div class="font-bold">≈ HK${{ (gbpIn * 10.4).toFixed(1) }}</div>
+                    <div class="font-bold">≈ HK${{ (gbpIn * 10.51).toFixed(2) }}</div>
                 </div>
                 <div class="p-4 bg-blue-600 text-white rounded-2xl flex items-center gap-4 shadow-md">
                     <div class="w-10 h-10 bg-white/20 flex items-center justify-center rounded-full font-bold">€</div>
                     <input type="number" v-model="eurIn" class="flex-1 bg-transparent border-b border-white/30 font-bold text-white outline-none text-xl">
-                    <div class="font-bold">≈ HK${{ (eurIn * 8.5).toFixed(1) }}</div>
+                    <div class="font-bold">≈ HK${{ (eurIn * 9.09).toFixed(2) }}</div>
                 </div>
             </div>
 
@@ -121,8 +123,8 @@
                     <div class="font-bold text-stone-700">{{ m.title }}</div>
                     <button @click="delItem('memos', i)" class="text-stone-300">✕</button>
                 </div>
-                <img v-if="m.image" :src="m.image" @click="zoomSrc = m.image" class="w-full h-40 object-cover rounded-xl mb-3">
-                <p class="text-xs text-stone-500">{{ m.content }}</p>
+                <img v-if="m.image" :src="m.image" @click="zoomSrc = m.image" class="w-full h-44 object-cover rounded-xl mb-3">
+                <p class="text-xs text-stone-500 leading-relaxed">{{ m.content }}</p>
             </div>
         </div>
 
@@ -138,10 +140,14 @@
                     <div class="text-2xl font-bold mt-1">{{ totalEUR.toFixed(2) }}</div>
                 </div>
             </div>
-
-            <div v-for="(exp, i) in expenses" :key="i" @click="startEditExpense(i)" :class="['flex justify-between items-center p-5 mb-2 rounded-2xl', exp.currency === 'GBP' ? 'bg-orange-50' : 'bg-blue-50']">
-                <div><div class="font-bold text-sm">{{ exp.name }}</div><div class="text-[10px] text-stone-400 uppercase">{{ exp.currency }}</div></div>
-                <div class="font-bold text-lg" :class="exp.currency === 'GBP' ? 'text-orange-600' : 'text-blue-700'">{{ exp.currency==='GBP'?'£':'€' }}{{ exp.amount }}</div>
+            <div v-for="(exp, i) in expenses" :key="i" @click="startEditExpense(i)" :class="['flex justify-between items-center p-5 mb-2 rounded-2xl', exp.currency === 'GBP' ? 'bg-orange-50 border border-orange-100' : 'bg-blue-50 border border-blue-100']">
+                <div>
+                    <div class="font-bold text-stone-700">{{ exp.name }}</div>
+                    <div class="text-[10px] text-stone-400 uppercase">{{ exp.currency }}</div>
+                </div>
+                <div class="font-bold text-lg" :class="exp.currency==='GBP'?'text-orange-600':'text-blue-700'">
+                    {{ exp.currency==='GBP'?'£':'€' }}{{ exp.amount }}
+                </div>
             </div>
         </div>
     </div>
@@ -155,7 +161,7 @@
 
     <div v-if="showModal" class="modal" @click.self="showModal = false">
         <div class="modal-body space-y-4">
-            <h3 class="font-bold text-lg">新增/編輯</h3>
+            <h3 class="font-bold text-lg">新增/編輯資料</h3>
             <template v-if="showModal === 'addItinerary'">
                 <input v-model="form.name" placeholder="名稱">
                 <div class="grid grid-cols-2 gap-3">
@@ -180,8 +186,8 @@
                 <input type="file" @change="handleImg" accept="image/*">
             </template>
             <div class="flex gap-2">
-                <button v-if="editIdx !== null" @click="delItem(tab, editIdx)" class="flex-1 py-4 text-red-500 bg-red-50 rounded-2xl">刪除</button>
-                <button @click="saveData" class="flex-[2] py-4 bg-stone-800 text-white rounded-2xl font-bold">儲存同步</button>
+                <button v-if="editIdx !== null" @click="delItem(tab, editIdx)" class="flex-1 py-4 text-red-500 bg-red-50 rounded-2xl font-bold">刪除</button>
+                <button @click="saveData" class="flex-[2] py-4 bg-stone-800 text-white rounded-2xl font-bold">儲存並同步</button>
             </div>
         </div>
     </div>
@@ -301,7 +307,8 @@
                 startEditItinerary: (i) => { editIdx.value = i; form.value = {...days.value[dayIdx.value].itinerary[i]}; showModal.value = 'addItinerary'; },
                 startEditExpense: (i) => { editIdx.value = i; form.value = {...expenses.value[i]}; showModal.value = 'addExpense'; },
                 delItem: (t, i) => { if(confirm("確定刪除？")) { if(t==='itinerary') days.value[dayIdx.value].itinerary.splice(i,1); else if(t==='shopping') shopping.value.splice(i,1); else if(t==='memos') memos.value.splice(i,1); else if(t==='expense') expenses.value.splice(i,1); sync(); showModal.value = false; } },
-                editTitle: () => { const l = prompt("地點:", days.value[dayIdx.value].location); if(l) { days.value[dayIdx.value].location=l; sync(); } },
+                editTitle: () => { const l = prompt("修改地點地點:", days.value[dayIdx.value].location); if(l) { days.value[dayIdx.value].location=l; sync(); } },
+                editSubTitle: () => { const s = prompt("修改每日行程副標題:", days.value[dayIdx.value].desc); if(s !== null) { days.value[dayIdx.value].desc=s; sync(); } },
                 getColor: (t) => ({'景點':'#5D5344','美食':'#C19A6B','購物':'#D489A3','交通':'#4A90E2','住宿':'#A389D4','航班':'#2c2c2c'}[t] || '#EEE'),
             }
         }
