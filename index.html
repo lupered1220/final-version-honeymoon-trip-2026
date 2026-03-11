@@ -12,7 +12,10 @@
         .banner-box { position: fixed; top: 0; width: 100%; height: 180px; background: #A9D5E6; z-index: 1; display: flex; justify-content: center; align-items: center; }
         .banner-box img { width: 100%; height: 100%; object-fit: contain; }
         .container { background: white; border-radius: 30px 30px 0 0; margin-top: 160px; position: relative; z-index: 10; min-height: 100vh; padding-bottom: 120px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
-        .sync-badge { position: fixed; top: 15px; right: 15px; z-index: 100; font-size: 11px; padding: 6px 12px; border-radius: 20px; font-weight: bold; background: white; border: 1px solid #EEE; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 4px; }
+        
+        /* 優化後的同步燈號：移至左上角且半透明 */
+        .sync-badge { position: fixed; top: 12px; left: 12px; z-index: 100; font-size: 10px; padding: 4px 10px; border-radius: 20px; font-weight: bold; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 4px; pointer-events: none; }
+        
         .dot { width: 6px; height: 6px; border-radius: 50%; }
         .item-card { background: #FCFAF5; border-radius: 16px; padding: 18px; margin-bottom: 16px; border: 1px solid #E8E2D6; position: relative; overflow: hidden; }
         .item-card::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--type-color); }
@@ -69,10 +72,7 @@
 
                 <div v-else class="item-card" :style="{'--type-color': getColor(item.type)}">
                     <div @click="startEditItinerary(item.originalIdx)">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="type-badge">{{ item.type }}</span>
-                            <span class="text-[11px] font-bold text-stone-400">{{ item.time }}</span>
-                        </div>
+                        <div class="flex justify-between items-start mb-2"><span class="type-badge">{{ item.type }}</span><span class="text-[11px] font-bold text-stone-400">{{ item.time }}</span></div>
                         <h3 class="text-lg font-bold text-stone-800 mb-1">{{ item.name }}</h3>
                         <p v-if="item.note" class="text-xs text-stone-500 italic mb-3">{{ item.note }}</p>
                     </div>
@@ -102,12 +102,12 @@
         <div v-show="tab === 'tools'" class="p-6">
             <h2 class="text-2xl font-bold mb-6 italic text-stone-700">匯率工具</h2>
             <div class="space-y-4 mb-10">
-                <div class="p-4 bg-orange-500 text-white rounded-2xl flex items-center gap-4 shadow-md">
+                <div class="p-4 bg-orange-500 text-white rounded-2xl flex items-center gap-4">
                     <div class="font-bold">£</div>
                     <input type="number" v-model="gbpIn" class="flex-1 bg-transparent border-b border-white/30 font-bold text-white outline-none">
                     <div class="font-bold text-sm">≈ HK${{ (gbpIn * 10.51).toFixed(2) }}</div>
                 </div>
-                <div class="p-4 bg-blue-600 text-white rounded-2xl flex items-center gap-4 shadow-md">
+                <div class="p-4 bg-blue-600 text-white rounded-2xl flex items-center gap-4">
                     <div class="font-bold">€</div>
                     <input type="number" v-model="eurIn" class="flex-1 bg-transparent border-b border-white/30 font-bold text-white outline-none">
                     <div class="font-bold text-sm">≈ HK${{ (eurIn * 9.09).toFixed(2) }}</div>
@@ -134,7 +134,7 @@
                 </div>
             </div>
             <div v-for="(exp, i) in expenses" :key="i" @click="startEditExpense(i)" :class="['flex justify-between items-center p-5 mb-2 rounded-2xl', exp.currency === 'GBP' ? 'bg-orange-50' : 'bg-blue-50']">
-                <div><div class="font-bold">{{ exp.name }}</div><div class="text-[10px] text-stone-400">{{ exp.currency }}</div></div>
+                <div><div class="font-bold">{{ exp.name }}</div><div class="text-[10px] text-stone-400 uppercase">{{ exp.currency }}</div></div>
                 <div class="font-bold text-lg" :class="exp.currency==='GBP'?'text-orange-600':'text-blue-700'">{{ exp.currency==='GBP'?'£':'€' }}{{ exp.amount }}</div>
             </div>
         </div>
@@ -188,7 +188,7 @@
             const days = ref(initialDays); const shopping = ref([]); const memos = ref([]); const expenses = ref([]);
             const showModal = ref(false); const zoomSrc = ref(null); const editIdx = ref(null);
             const form = ref({}); const gbpIn = ref(100); const eurIn = ref(100);
-            const syncInfo = ref({ text: '⏳ 讀取中...', color: '#999' });
+            const syncInfo = ref({ text: '⏳ 讀取中...', color: '#666' });
             const isLoaded = ref(false);
 
             let db;
@@ -209,7 +209,7 @@
                         expenses.value = d.expenses || [];
                     }
                     isLoaded.value = true;
-                    syncInfo.value = { text: '☁️ 待機中', color: '#999' };
+                    syncInfo.value = { text: '☁️ 待機中', color: '#888' };
                     nextTick(() => lucide.createIcons());
                 });
             } catch (e) { syncInfo.value = { text: '❌ 連線錯誤', color: 'red' }; }
@@ -224,7 +224,7 @@
                     expenses: JSON.parse(JSON.stringify(expenses.value))
                 }, { merge: true }).then(() => {
                     syncInfo.value = { text: '✅ 已同步', color: '#28C76F' };
-                    setTimeout(() => syncInfo.value = { text: '☁️ 待機中', color: '#999' }, 3000);
+                    setTimeout(() => { if(isLoaded.value) syncInfo.value = { text: '☁️ 待機中', color: '#888' }; }, 3000);
                 });
             };
 
