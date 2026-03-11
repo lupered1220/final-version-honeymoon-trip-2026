@@ -2,17 +2,35 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>蜜月旅行 2026</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <meta name="apple-mobile-web-app-title" content="Honeymoon">
+    
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
         :root { --brown: #5D5344; --bg: #FDFBF7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif, 'Noto Serif TC'; background: var(--bg); margin: 0; color: #4A4238; -webkit-tap-highlight-color: transparent; }
+        
+        /* 修改 body 以適應全螢幕 iOS 體驗，防止手勢干擾 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif, 'Noto Serif TC'; 
+            background: var(--bg); 
+            margin: 0; 
+            color: #4A4238; 
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none; /* 禁用長按選單，更像 App */
+        }
+        
         .banner-box { position: fixed; top: 0; width: 100%; height: 180px; background: #A9D5E6; z-index: 1; display: flex; justify-content: center; align-items: center; }
         .banner-box img { width: 100%; height: 100%; object-fit: contain; }
         .container { background: white; border-radius: 30px 30px 0 0; margin-top: 160px; position: relative; z-index: 10; min-height: 100vh; padding-bottom: 120px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
-        .sync-badge { position: fixed; top: 12px; left: 12px; z-index: 100; font-size: 10px; padding: 4px 10px; border-radius: 20px; font-weight: bold; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; gap: 4px; pointer-events: none; }
+        .sync-badge { position: fixed; top: env(safe-area-inset-top, 12px); left: 12px; z-index: 100; font-size: 10px; padding: 4px 10px; border-radius: 20px; font-weight: bold; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; gap: 4px; pointer-events: none; }
         .dot { width: 6px; height: 6px; border-radius: 50%; }
         .item-card { background: #FCFAF5; border-radius: 16px; padding: 18px; margin-bottom: 16px; border: 1px solid #E8E2D6; position: relative; overflow: hidden; }
         .item-card::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--type-color); }
@@ -21,9 +39,9 @@
         .tab-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #EEE; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .tab-btn { flex: 1; padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: bold; color: #AAA; border:none; background:none; }
         .tab-btn.active { color: var(--brown); }
-        .fab { position: fixed; bottom: 90px; right: 20px; width: 60px; height: 60px; background: var(--brown); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 90; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .fab { position: fixed; bottom: calc(90px + env(safe-area-inset-bottom)); right: 20px; width: 60px; height: 60px; background: var(--brown); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 90; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; }
-        .modal-body { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; max-height: 85vh; overflow-y: auto; }
+        .modal-body { background: white; width: 100%; border-radius: 30px 30px 0 0; padding: 25px; padding-bottom: calc(25px + env(safe-area-inset-bottom)); max-height: 85vh; overflow-y: auto; }
         input, select, textarea { width: 100%; padding: 15px; background: #F8F6F2; border-radius: 12px; border: 1px solid #E2DDD5; margin-top: 8px; font-size: 16px; }
         [v-cloak] { display: none !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -150,7 +168,9 @@
     </div>
 
     <nav class="tab-nav shadow-lg">
-        <button v-for="t in tabs" @click="tab = t.id" :class="['tab-btn', tab === t.id ? 'active' : '']"><i :data-lucide="t.icon" class="w-5"></i><span>{{ t.name }}</span></button>
+        <button v-for="t in tabs" @click="tab = t.id" :class="['tab-btn', tab === t.id ? 'active' : '']">
+            <i :data-lucide="t.icon" class="w-5"></i><span>{{ t.name }}</span>
+        </button>
     </nav>
     <button class="fab" @click="openAddModal"><i data-lucide="plus" class="w-8"></i></button>
 
@@ -177,7 +197,10 @@
             <template v-if="showModal === 'addShopping'"><input v-model="form.name" placeholder="商品名稱"><input type="file" @change="handleImg" accept="image/*"><img v-if="form.image" :src="form.image" class="max-h-32 mx-auto mt-2 rounded"></template>
             <template v-if="showModal === 'addExpense'"><input v-model="form.name" placeholder="項目"><div class="grid grid-cols-2 gap-3"><input type="number" v-model="form.amount" placeholder="金額"><select v-model="form.currency"><option value="GBP">英鎊 £</option><option value="EUR">歐元 €</option></select></div></template>
             <template v-if="showModal === 'addMemo'"><input v-model="form.title" placeholder="標題"><textarea v-model="form.content" placeholder="內容..."></textarea><input type="file" @change="handleImg" accept="image/*"></template>
-            <div class="flex gap-2"><button v-if="editIdx !== null" @click="delItem(tab, editIdx)" class="flex-1 py-4 text-red-500 bg-red-50 rounded-2xl font-bold">刪除</button><button @click="saveData" class="flex-[2] py-4 bg-stone-800 text-white rounded-2xl font-bold">儲存並同步</button></div>
+            <div class="flex gap-2">
+                <button v-if="editIdx !== null" @click="delItem(tab, editIdx)" class="flex-1 py-4 text-red-500 bg-red-50 rounded-2xl font-bold">刪除</button>
+                <button @click="saveData" class="flex-[2] py-4 bg-stone-800 text-white rounded-2xl font-bold">儲存並同步</button>
+            </div>
         </div>
     </div>
 </div>
